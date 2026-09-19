@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タクスグ (TAKUSUKU) | 卓球用具パーソナル診断＆データベース</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            red: '#0f172a',
+                            redDark: '#020617',
+                            redLight: '#f8fafc',
+                            redBorder: '#e2e8f0',
+                            dark: '#0f172a',
+                            grayText: '#475569',
+                            lightBg: '#ffffff',
+                            cardBg: '#ffffff',
+                            borderColor: '#e2e8f0'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Meiryo', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js for Spec Radar / Bar Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root { --takusuku-accent: #ef4444; --takusuku-accent-dark: #dc2626; }
+        body.bg-white { background: #f8fafc; }
+        body { border-top-color: var(--takusuku-accent) !important; }
+        header { box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04); }
+        #view-diagnosis > .bg-white, #view-database > .bg-white, #quiz-container, #quiz-results > .bg-white {
+            box-shadow: 0 5px 16px rgba(15, 23, 42, 0.05);
+        }
+        .result-evaluation { border-left: 4px solid var(--takusuku-accent); }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-white text-brand-dark min-h-screen flex flex-col font-sans selection:bg-slate-800 selection:text-white border-t-4 border-slate-900">
+
+    <!-- Top Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('diagnosis')">
+                <img src="TAKUSUKU (1).png" alt="タクスグ Logo" class="h-8 sm:h-10 w-auto object-contain" onerror="this.onerror=null; this.src='う (1).png';">
+            </div>
+
+            <!-- Main Nav Tabs -->
+            <nav class="flex space-x-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+                <button id="tab-btn-diagnosis" onclick="switchTab('diagnosis')" 
+                    class="px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold flex items-center space-x-2 bg-slate-900 text-white shadow-sm">
+                    <img src="う (1).png" alt="Logo Icon" class="w-4 h-4 rounded-full bg-white p-0.5 object-contain inline-block">
+                    <span>パーソナル診断</span>
+                </button>
+                <button id="tab-btn-database" onclick="switchTab('database')" 
+                    class="px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold flex items-center space-x-2 text-slate-600 hover:text-brand-dark">
+                    <i class="fa-solid fa-database text-slate-400"></i>
+                    <span>用具DB & 検索</span>
+                </button>
+            </nav>
+
+            <!-- Saved My Setups & Local Login -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Saved My Setups Drawer Toggle -->
+                <button onclick="toggleSavedModal()" class="relative p-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-900">
+                    <i class="fa-solid fa-bookmark text-base"></i>
+                    <span id="saved-count-badge" class="absolute -top-1 -right-1 bg-slate-900 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
+                </button>
+                <button id="account-button" onclick="openLoginModal()" class="px-3 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold flex items-center space-x-1.5" title="ログイン・アカウント">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span id="account-button-label">ログイン</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ========================================== -->
+        <!-- TAB 1: パーソナル診断 (Personal Diagnostic) -->
+        <!-- ========================================== -->
+        <section id="view-diagnosis" class="block space-y-6">
+            
+            <!-- Hero Banner -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
+                <div class="max-w-2xl">
+                    <div class="inline-flex items-center space-x-2 bg-slate-100 border border-slate-300 px-3 py-1 rounded-md text-slate-800 text-xs font-semibold mb-3">
+                        <i class="fa-solid fa-sliders text-slate-700"></i>
+                        <span>卓球用具を、もっと選びやすく</span>
+                    </div>
+                    <h1 class="text-xl sm:text-3xl font-extrabold text-brand-dark tracking-tight mb-2">
+                        あなたのプレースタイルに、最高の<span class="text-slate-900 border-b-2 border-slate-900 pb-0.5">最適解</span>を。
+                    </h1>
+                    <p class="text-brand-grayText text-xs sm:text-sm leading-relaxed">
+                        戦術、打球感の好み、レベル、予算を選ぶだけで、100種以上の厳選データからあなた専用のラケット＆両面ラバーの黄金組合せを完全診断！
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quiz Wizard Card -->
+            <div id="quiz-container" class="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm">
+                
+                <!-- Progress Header -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2 text-xs font-semibold text-slate-500">
+                        <span id="quiz-step-title">質問 1 / 6</span>
+                        <span id="quiz-progress-percent" class="text-slate-900 font-bold">16%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                        <div id="quiz-progress-bar" class="bg-slate-900 h-full rounded-full" style="width: 16%;"></div>
+                    </div>
+                </div>
+
+                <!-- Questions Container -->
+                <div id="quiz-questions" class="min-h-[280px]">
+                    <!-- Questions will be injected dynamically via JS -->
+                </div>
+
+                <!-- Quiz Navigation Buttons -->
+                <div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+                    <button id="quiz-prev-btn" onclick="prevQuizStep()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs sm:text-sm font-semibold flex items-center space-x-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-arrow-left text-xs"></i>
+                        <span>前へ</span>
+                    </button>
+                    
+                    <button id="quiz-next-btn" onclick="nextQuizStep()" class="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold flex items-center space-x-2 shadow-sm">
+                        <span>次へ進む</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Diagnostic Loading View -->
+            <div id="quiz-loading" class="hidden bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm py-16">
+                <div class="w-12 h-12 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <h3 class="text-lg font-bold text-brand-dark mb-1">AI解析中...</h3>
+                <p class="text-slate-500 text-xs max-w-md mx-auto">100種以上のラケット＆ラバーデータベースから、あなたの回答情報に最も合致するギアを精密算定中...</p>
+            </div>
+
+            <!-- Diagnostic Results View -->
+            <div id="quiz-results" class="hidden space-y-6">
+                <!-- Result Hero Banner -->
+                <div class="bg-white border-2 border-slate-900 rounded-xl p-6 sm:p-8 shadow-sm">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                            <div class="inline-flex items-center space-x-2 bg-slate-900 text-white text-xs px-3 py-1 rounded-md font-bold mb-3">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>診断完了 - プレミアムマッチ</span>
+                            </div>
+                            <h2 class="text-xl sm:text-2xl font-extrabold text-brand-dark mb-2">あなたに最もおすすめの組合せ</h2>
+                            <p id="result-summary-text" class="text-brand-grayText text-xs sm:text-sm leading-relaxed"></p>
+                        </div>
+
+                        <!-- Match Score Badge -->
+                        <div class="flex flex-col items-center justify-center bg-slate-50 border border-slate-200 p-4 rounded-xl w-full sm:w-44 text-center shrink-0">
+                            <span class="text-xs text-slate-700 font-semibold mb-1">マッチ度</span>
+                            <div class="text-3xl font-black text-slate-900 flex items-baseline justify-center">
+                                <span id="result-match-score">98</span><span class="text-lg">%</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-0.5">AI算定適合率</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Combination Cards (Racket + Forehand + Backhand) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Racket Card -->
+                    <div id="result-racket-card" class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between"></div>
+                    <!-- Forehand Card -->
+                    <div id="result-forehand-card" class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between"></div>
+                    <!-- Backhand Card -->
+                    <div id="result-backhand-card" class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between"></div>
+                </div>
+
+                <!-- Analysis Breakdown & Specs Radar -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Reason Analysis -->
+                    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                        <h3 class="text-base font-bold text-brand-dark mb-4 flex items-center space-x-2 border-b border-slate-100 pb-2">
+                            <i class="fa-solid fa-microchip text-slate-900"></i>
+                            <span>推奨理由・特徴アナリティクス</span>
+                        </h3>
+                        <div id="result-reasons-list" class="space-y-2.5 text-xs sm:text-sm text-brand-grayText"></div>
+                    </div>
+
+                    <!-- Setup Stat Performance Chart -->
+                    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+                        <h3 class="text-base font-bold text-brand-dark mb-2 flex items-center space-x-2 border-b border-slate-100 pb-2">
+                            <i class="fa-solid fa-chart-radar text-red-500"></i>
+                            <span>組合せトータル性能バランス</span>
+                        </h3>
+                        <div class="relative w-full h-60 flex items-center justify-center">
+                            <canvas id="resultChart"></canvas>
+                        </div>
+                        <div id="result-balance-summary" class="result-evaluation mt-3 bg-slate-50 rounded-r-lg px-3 py-2.5 text-xs leading-relaxed text-slate-600"></div>
+                    </div>
+                </div>
+
+                <!-- Action Bar (Save / Retake) -->
+                <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+                    <button onclick="resetQuiz()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold flex items-center space-x-2">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span>もう一度やり直す</span>
+                    </button>
+
+                    <div class="flex items-center space-x-3">
+                        <button onclick="saveCurrentResult()" class="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold flex items-center space-x-2 shadow-sm">
+                            <i class="fa-solid fa-bookmark"></i>
+                            <span>この構成を保存</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: 用具データベース & 検索 (Database)   -->
+        <!-- ========================================== -->
+        <section id="view-database" class="hidden space-y-6">
+            
+            <!-- Controls Bar: Search & Filters -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+                
+                <!-- Search Bar -->
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="db-search-input" oninput="applyDbFilters()" placeholder="品名・ブランド・技術名で検索... (例: テナジー, インナーフォース, 粘着)"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-10 pr-10 py-2.5 text-xs sm:text-sm text-brand-dark placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white">
+                    <button onclick="clearSearch()" id="clear-search-btn" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 hidden">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Filter Row 1: Category Badges -->
+                <div class="flex items-center space-x-2 overflow-x-auto pb-1 hide-scrollbar">
+                    <span class="text-xs text-slate-500 font-bold whitespace-nowrap mr-1">カテゴリ:</span>
+                    <button onclick="filterCategory('all')" class="cat-filter-btn active px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap bg-slate-900 text-white" data-cat="all">すべて</button>
+                    <button onclick="filterCategory('racket')" class="cat-filter-btn px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="racket">ラケット</button>
+                    <button onclick="filterCategory('inverted')" class="cat-filter-btn px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="inverted">裏ソフト</button>
+                    <button onclick="filterCategory('pips-out')" class="cat-filter-btn px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="pips-out">表ソフト</button>
+                    <button onclick="filterCategory('long-pips')" class="cat-filter-btn px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="long-pips">粒高・アンチ</button>
+                </div>
+
+                <!-- Filter Row 2: Brand Dropdown & Sorting -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-100 text-xs">
+                    <div>
+                        <label class="block text-slate-500 font-semibold mb-1">メーカー</label>
+                        <select id="db-brand-select" onchange="applyDbFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-brand-dark focus:outline-none focus:border-slate-900">
+                            <option value="all">すべてのメーカー</option>
+                            <option value="Butterfly">バタフライ (Butterfly)</option>
+                            <option value="Nittaku">ニッタク (Nittaku)</option>
+                            <option value="VICTAS">ヴィクタス (VICTAS)</option>
+                            <option value="Yasaka">ヤサカ (Yasaka)</option>
+                            <option value="STIGA">スティガ (STIGA)</option>
+                            <option value="Mizuno">ミズノ (Mizuno)</option>
+                            <option value="XIOM">エクシオン (XIOM)</option>
+                            <option value="DHS">紅双喜 (DHS)</option>
+                            <option value="TIBHAR">ティバー (TIBHAR)</option>
+                            <option value="DONIC">ドニック (DONIC)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-500 font-semibold mb-1">価格帯</label>
+                        <select id="db-price-select" onchange="applyDbFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-brand-dark focus:outline-none focus:border-slate-900">
+                            <option value="all">すべての価格</option>
+                            <option value="under5000">〜5,000円 (初心者向け)</option>
+                            <option value="5000-10000">5,000円〜10,000円 (中級)</option>
+                            <option value="10000-20000">10,000円〜20,000円 (ハイエンド)</option>
+                            <option value="over20000">20,000円〜 (フラッグシップ)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-500 font-semibold mb-1">並び替え</label>
+                        <select id="db-sort-select" onchange="applyDbFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-brand-dark focus:outline-none focus:border-slate-900">
+                            <option value="latest">最新順</option>
+                            <option value="popular">人気順</option>
+                            <option value="rating-desc">評価の高い順</option>
+                            <option value="speed-desc">スピード順</option>
+                            <option value="spin-desc">スピン順</option>
+                            <option value="price-asc">価格の安い順</option>
+                            <option value="price-desc">価格の高い順</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-end">
+                        <button onclick="resetDbFilters()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold p-2 rounded-lg transition flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>条件リセット</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Counter -->
+            <div class="flex justify-between items-center px-1 text-xs text-slate-500">
+                <div>
+                    該当件数: <span id="db-count-text" class="text-brand-dark font-bold text-sm">0</span> 件
+                </div>
+            </div>
+
+            <!-- Database Grid Container -->
+            <div id="db-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Injected via Javascript -->
+            </div>
+
+            <!-- No Results Placeholder -->
+            <div id="db-no-results" class="hidden bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 shadow-sm">
+                <i class="fa-solid fa-circle-exclamation text-3xl text-slate-300 mb-2"></i>
+                <p class="text-sm font-bold text-brand-dark mb-1">条件に該当する卓球用具が見つかりませんでした。</p>
+                <p class="text-xs">検索キーワードやフィルター条件を緩めてお試しください。</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Detail Item Modal -->
+    <div id="detail-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-none flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-xl shadow-lg overflow-hidden max-h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 flex justify-between items-start">
+                <div class="flex items-center space-x-4">
+                    <!-- 拡大・強調された商品画像 (w-20 h-20 ~ sm:w-24 sm:h-24) -->
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-lg border border-slate-200 p-2 shrink-0 flex items-center justify-center shadow-sm">
+                        <img id="modal-image" src="" alt="Item Image" class="w-full h-full object-contain hover:scale-105 transition-transform duration-200">
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2 mb-1.5">
+                            <span id="modal-brand" class="text-xs font-bold text-slate-900 uppercase bg-slate-200 px-2 py-0.5 rounded">Brand</span>
+                            <span id="modal-category" class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded">Category</span>
+                        </div>
+                        <h3 id="modal-title" class="text-base sm:text-xl font-bold text-brand-dark leading-tight">Item Name</h3>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-5 overflow-y-auto space-y-5">
+                <!-- Main Spec Summary -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+                    <div>
+                        <span class="text-[10px] text-slate-500 block">楽天最安値・参考価格</span>
+                        <span id="modal-price" class="text-sm font-extrabold text-red-600">¥0</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-500 block">スピード性能</span>
+                        <span id="modal-speed" class="text-sm font-bold text-brand-dark">0</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-500 block">スピン / 弧線</span>
+                        <span id="modal-spin" class="text-sm font-bold text-brand-dark">0</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-500 block">コントロール</span>
+                        <span id="modal-control" class="text-sm font-bold text-brand-dark">0</span>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">用具の特徴・解説</h4>
+                    <p id="modal-description" class="text-xs sm:text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-200"></p>
+                </div>
+
+                <!-- Recommended Combos -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">相性の良いおすすめペアリング</h4>
+                    <div id="modal-combos" class="flex flex-wrap gap-2 text-xs"></div>
+                </div>
+
+                <!-- E-commerce Quick Search Affiliate Links -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">各ECサイトで価格比較・検索</h4>
+                    <div class="grid grid-cols-3 gap-2">
+                        <a id="link-amazon" href="#" target="_blank" rel="noopener noreferrer" 
+                            class="flex items-center justify-center space-x-1.5 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-800 py-2 rounded-lg font-bold text-xs transition">
+                            <i class="fa-brands fa-amazon text-sm"></i>
+                            <span>Amazon</span>
+                        </a>
+                        <a id="link-rakuten" href="#" target="_blank" rel="noopener noreferrer" 
+                            class="flex items-center justify-center space-x-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 py-2 rounded-lg font-bold text-xs transition">
+                            <i class="fa-solid fa-shop text-sm"></i>
+                            <span>楽天市場 (最安値)</span>
+                        </a>
+                        <a id="link-yahoo" href="#" target="_blank" rel="noopener noreferrer" 
+                            class="flex items-center justify-center space-x-1.5 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-800 py-2 rounded-lg font-bold text-xs transition">
+                            <i class="fa-solid fa-bag-shopping text-sm"></i>
+                            <span>Yahoo!</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved Setups Modal -->
+    <div id="saved-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-none flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-white border border-slate-200 w-full max-w-lg rounded-xl shadow-lg overflow-hidden max-h-[85vh] flex flex-col">
+            <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="text-base font-bold text-brand-dark flex items-center space-x-2">
+                    <i class="fa-solid fa-bookmark text-slate-900"></i>
+                    <span>保存した用具構成一覧</span>
+                </h3>
+                <button onclick="toggleSavedModal()" class="text-slate-400 hover:text-slate-700 p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="saved-setups-list" class="p-5 overflow-y-auto space-y-3 flex-grow">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-lg flex items-center space-x-2 transform translate-y-16 opacity-0 transition-all duration-200 pointer-events-none border-l-4 border-slate-500">
+        <img src="う (1).png" class="w-4 h-4 object-contain" alt="Toast icon">
+        <span id="toast-message">メッセージ</span>
+    </div>
+
+    <!-- Local Login Modal -->
+    <div id="login-modal" class="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-white border border-slate-200 w-full max-w-sm rounded-xl shadow-lg overflow-hidden">
+            <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                <div>
+                    <h3 class="text-base font-bold text-brand-dark"><i class="fa-solid fa-user mr-1.5"></i>ローカルログイン</h3>
+                    <p class="text-[10px] text-slate-500 mt-0.5">このブラウザ内だけで保存されます</p>
+                </div>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-900 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-5">
+                <div id="login-status" class="hidden mb-4 rounded-lg bg-slate-100 border border-slate-200 p-3 text-xs text-slate-700"></div>
+                <div id="auth-forms">
+                    <div class="flex bg-slate-100 rounded-lg p-1 mb-4 text-xs font-bold">
+                        <button id="auth-tab-login" onclick="setAuthMode('login')" class="w-1/2 py-2 rounded-md bg-white shadow-sm text-slate-900">ログイン</button>
+                        <button id="auth-tab-register" onclick="setAuthMode('register')" class="w-1/2 py-2 rounded-md text-slate-500">新規登録</button>
+                    </div>
+                    <form id="auth-form" onsubmit="submitAuth(event)" class="space-y-3">
+                        <div>
+                            <label for="auth-username" class="block text-xs font-bold text-slate-700 mb-1">ユーザー名</label>
+                            <input id="auth-username" required maxlength="20" autocomplete="username" placeholder="例：takkyu_taro" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-slate-900">
+                        </div>
+                        <div>
+                            <label for="auth-password" class="block text-xs font-bold text-slate-700 mb-1">パスワード</label>
+                            <input id="auth-password" type="password" required minlength="4" autocomplete="current-password" placeholder="4文字以上" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-slate-900">
+                        </div>
+                        <p id="auth-message" class="hidden text-xs rounded-lg px-3 py-2"></p>
+                        <button id="auth-submit" type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm py-2.5 rounded-lg">ログイン</button>
+                    </form>
+                </div>
+                <div id="logged-in-actions" class="hidden space-y-3">
+                    <p class="text-sm text-slate-700">ログイン中：<span id="logged-in-name" class="font-bold text-slate-900"></span></p>
+                    <button onclick="logoutLocalUser()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm py-2.5 rounded-lg">ログアウト</button>
+                </div>
+                <p class="mt-4 text-[10px] leading-relaxed text-slate-400">これは端末内だけで動く簡易機能です。入力情報と保存データはこのブラウザに保存され、別の端末・ブラウザには引き継がれません。重要なパスワードは使用しないでください。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center space-y-2">
+            <img src="TAKUSUKU (1).png" class="h-6 w-auto object-contain opacity-75" alt="Footer Logo">
+            <p>© 2026 タクスグ (TAKUSUKU) - Table Tennis Personal Diagnostic & Gear Database</p>
+        </div>
+    </footer>
+
+    <script>
+        /* ==========================================================
+           0. RAKUTEN API INTEGRATION (価格・画像データの取得)
+           ========================================================== */
+        // デフォルトプレースホルダー画像
+        const RAKUTEN_DEFAULT_IMAGE = 'https://thumbnail.image.rakuten.co.jp/@0_mall/brand/cabinet/tabletennis_item.jpg?_ex=300x300';
+        
+        // 楽天デベロッパーで発行したアプリIDを設定することで最新価格・画像を自動反映します
+        const RAKUTEN_APP_ID = 'YOUR_RAKUTEN_APP_ID';
+
+        /**
+         * 楽天市場商品検索APIを利用して価格（最安値）と画像URLを取得して反映する関数
+         * @param {string} appId - 楽天デベロッパーのApplication ID
+         */
+        async function fetchRakutenData(appId) {
+            if (!appId || appId === 'YOUR_RAKUTEN_APP_ID') return;
+
+            for (let item of equipmentDatabase) {
+                try {
+                    const keyword = encodeURIComponent(`${item.brand} ${item.name} 卓球`);
+                    const response = await fetch(`https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706?format=json&keyword=${keyword}&applicationId=${appId}&hits=1&sort=%2BitemPrice`);
+                    const data = await response.json();
+
+                    if (data.Items && data.Items.length > 0) {
+                        const itemData = data.Items[0].Item;
+                        
+                        // 画像取得 (高解像度化)
+                        if (itemData.mediumImageUrls && itemData.mediumImageUrls.length > 0) {
+                            item.imageUrl = itemData.mediumImageUrls[0].imageUrl.replace('?_ex=128x128', '?_ex=400x400');
+                        }
+                        
+                        // 楽天APIより最安値価格を取得して更新
+                        if (itemData.itemPrice) {
+                            item.price = itemData.itemPrice;
+                            item.isRakutenPrice = true;
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`Rakuten API fetch error for ${item.name}:`, err);
+                }
+            }
+            // 取得完了後にグリッドおよび診断結果を再描画
+            applyDbFilters();
+        }
+
+        /* ==========================================================
+           1. COMPREHENSIVE EQUIPMENT DATABASE (500 Table Tennis Items)
+           ========================================================== */
+        const equipmentDatabase = [
+            // RACKETS (25 items)
+            { id: 'r1', name: 'ビスカリア (VISCARIA)', brand: 'Butterfly', category: 'racket', price: 22000, speed: 92, spin: 88, control: 82, stiffness: '硬め', weight: '86g', desc: 'アリアート カーボン搭載。世界のトップ選手が絶大な信頼を寄せるアウトサイドカーボンラケットの金字塔。', combos: ['テナジー05', 'ディグニクス05'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r2', name: 'ファンジェンドン ALC (FAN ZHENDONG ALC)', brand: 'Butterfly', category: 'racket', price: 22000, speed: 93, spin: 89, control: 81, stiffness: '硬め', weight: '87g', desc: '優れた弾みと高いコントロール性能を両立したアリアートカーボン搭載モデル。', combos: ['ディグニクス09C', 'テナジー05'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r3', name: 'インナーフォース レイヤー ALC', brand: 'Butterfly', category: 'racket', price: 19800, speed: 85, spin: 92, control: 90, stiffness: 'やや柔らかめ', weight: '88g', desc: 'インナー仕様のALC。ボールをしっかりと掴む木材のような打球感と適度な飛距離が魅力。', combos: ['テナジー05', 'ロゼナ'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r4', name: '張本智和 インナーフォース ALC', brand: 'Butterfly', category: 'racket', price: 19800, speed: 86, spin: 91, control: 89, stiffness: 'ミディアム', weight: '88g', desc: 'ブレードサイズをわずかに大きくし、前陣での強力なドライブと安定したブロック力を実現。', combos: ['ディグニクス05', 'ディグニクス80'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r5', name: 'コロベル (KORBEL)', brand: 'Butterfly', category: 'racket', price: 6050, speed: 72, spin: 80, control: 95, stiffness: '柔らかめ', weight: '88g', desc: '5枚合板のロングセラー定番。コントロール重視のプレーヤーや初・中級者のステップアップに最適。', combos: ['ロゼナ', 'ファスターク G-1'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r6', name: 'アコースティック (ACOUSTIC)', brand: 'Nittaku', category: 'racket', price: 19800, speed: 78, spin: 88, control: 94, stiffness: 'しなりあり', weight: '88g', desc: '弦楽器製法による独特なしなりと心地よい打球感。回転をかけやすく扱いやすさ抜群。', combos: ['ファスターク G-1', 'ハモンド Z2'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r7', name: 'アコースティックカーボン', brand: 'Nittaku', category: 'racket', price: 22000, speed: 88, spin: 88, control: 88, stiffness: 'ミディアム', weight: '90g', desc: 'アコースティックのフィーリングをそのままに特殊素材でスピード性能を大幅強化。', combos: ['ファスターク G-1', 'キョウヒョウ3'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r8', name: 'バイオリン (VIOLIN)', brand: 'Nittaku', category: 'racket', price: 19800, speed: 74, spin: 85, control: 96, stiffness: 'しなり強い', weight: '88g', desc: 'しなりが大きくボールを包み込む打球感。前中陣でのピッチの早いラリーで威力を発揮。', combos: ['ラクザ7', 'ファスターク C-1'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r9', name: '丹羽孝希 ウッド (KOKI NIWA WOOD)', brand: 'VICTAS', category: 'racket', price: 16500, speed: 84, spin: 86, control: 88, stiffness: 'ミディアム', weight: '90g', desc: '特殊素材なしの7枚合板。超攻撃的な前陣速攻プレーにマッチする打球感。', combos: ['V>15 Extra', 'V>22 Double Extra'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r10', name: '松下浩二 (KOJI MATSUSHITA)', brand: 'VICTAS', category: 'racket', price: 11000, speed: 55, spin: 90, control: 98, stiffness: '柔らかめ', weight: '87g', desc: 'カットマン専用名機。相手の強力なドライブを抑え込む抜群の抑止力と操作性。', combos: ['カール P1V', 'VS>401'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r11', name: 'スワット (SWAT)', brand: 'VICTAS', category: 'racket', price: 5720, speed: 76, spin: 82, control: 92, stiffness: 'ミディアム', weight: '85g', desc: '木材7枚合板の圧倒的人気コスパモデル。木材ならではの打感で万能な性能。', combos: ['ヴェンタス レギュラー', 'V>01 Stiff'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r12', name: 'クリッパーロード (CLIPPER WOOD)', brand: 'STIGA', category: 'racket', price: 14300, speed: 86, spin: 84, control: 86, stiffness: 'やや硬め', weight: '90g', desc: '7枚合板の世界的スタンダード。威力あるミート打ちとドライブ打球が魅力。', combos: ['マントラ M', 'ラクザ 7'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r13', name: 'サイバーシェイプ カーボン', brand: 'STIGA', category: 'racket', price: 30800, speed: 95, spin: 88, control: 80, stiffness: '硬め', weight: '85g', desc: '独自の六角形デザイン。スイートスポットが先端方向に拡大し、現代卓球の威力を最大化。', combos: ['ディグニクス09C', 'DNA プラチナ XH'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r14', name: 'アルティウス ST5', brand: 'Mizuno', category: 'racket', price: 8250, speed: 70, spin: 80, control: 94, stiffness: '柔らかめ', weight: '85g', desc: 'コントロール性に特化した5枚合板。初心者から中級者の基本技術習得にベスト。', combos: ['Q1', 'ロゼナ'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r15', name: 'フォルティウス FT', brand: 'Mizuno', category: 'racket', price: 10450, speed: 85, spin: 84, control: 87, stiffness: 'ミディアム', weight: '92g', desc: '7枚合板ならではの重厚な打球感と押し負けない破壊力。', combos: ['Q5', 'Q Quality'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r16', name: 'スウェーデン クラシック', brand: 'Yasaka', category: 'racket', price: 6380, speed: 68, spin: 80, control: 96, stiffness: '柔らかめ', weight: '82g', desc: '北欧伝統の繊細なタッチ感。台上処理やブロックの安定感が抜群。', combos: ['マークV', 'ラクザ7 ソフト'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r17', name: '馬林エキストラオフェンシブ (YEO)', brand: 'Yasaka', category: 'racket', price: 10780, speed: 82, spin: 88, control: 88, stiffness: 'やや硬め', weight: '88g', desc: '表面に硬質木材を使用した5枚合板。ペンホルダーでのドライブ攻撃に絶大な人気。', combos: ['ラクザX', 'キョウヒョウNEO3'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r18', name: 'キョウヒョウ龍5 (DHS)', brand: 'DHS', category: 'racket', price: 28000, speed: 94, spin: 94, control: 78, stiffness: '硬め', weight: '91g', desc: 'インナーカーボン構造。しなりからの爆発的な回転量と飛距離を生み出す王者モデル。', combos: ['キョウヒョウ3 国狂', 'ディグニクス05'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r19', name: 'アイスクリーム AZX', brand: 'XIOM', category: 'racket', price: 22000, speed: 93, spin: 87, control: 82, stiffness: '硬め', weight: '88g', desc: 'フォアとバックで異なる特殊素材（アリーレートカーボンとゼフィリウムカーボン）を配置。', combos: ['オメガVII ツアー', 'ヴェガ ヨーロッパ'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r20', name: 'ヴェガ ヨーロッパ (ラケット)', brand: 'XIOM', category: 'racket', price: 8800, speed: 78, spin: 82, control: 90, stiffness: 'ミディアム', weight: '84g', desc: '扱いやすさと適度な飛距離。コスパ重視の中級者向け万能ラケット。', combos: ['ヴェガ ヨーロッパ', 'ヴェガ DF'], rating: 4.5, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r21', name: 'ティモボル ALC', brand: 'Butterfly', category: 'racket', price: 19800, speed: 90, spin: 88, control: 84, stiffness: '硬め', weight: '86g', desc: '優れた攻撃力と安定性のパーフェクトバランス。長年愛される名機。', combos: ['テナジー05', 'テナジー80'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r22', name: '水谷隼 ZLC', brand: 'Butterfly', category: 'racket', price: 27500, speed: 96, spin: 86, control: 80, stiffness: 'かなり硬め', weight: '88g', desc: 'ZLカーボン搭載。高反発で後陣からでも引き返せる驚異の飛距離。', combos: ['ディグニクス05', 'テナジー64'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r23', name: 'ストラタス パワーウッド', brand: 'TIBHAR', category: 'racket', price: 7700, speed: 80, spin: 83, control: 90, stiffness: 'ミディアム', weight: '85g', desc: 'バランスに優れた5枚合板。パワフルなドライブを扱いやすく発揮。', combos: ['エボリューション MX-P'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r24', name: 'ワルドナー OFF World Champion', brand: 'DONIC', category: 'racket', price: 12100, speed: 81, spin: 85, control: 92, stiffness: 'ミディアム', weight: '83g', desc: '伝説の皇帝ワルドナーモデル。前陣でのトリッキーなコース突くとコントロールに最適。', combos: ['ブルーグリップ C2'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'r25', name: '吉田海偉 (YOSHIDA KAII)', brand: 'Butterfly', category: 'racket', price: 7700, speed: 84, spin: 81, control: 86, stiffness: '硬め', weight: '92g', desc: '中国式ペンホルダーの豪快なドライブ攻撃に適した7枚合板。', combos: ['スピンアート', 'テナジー05'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+
+            // INVERTED RUBBERS (裏ソフト 40 items)
+            { id: 'i1', name: 'ディグニクス05', brand: 'Butterfly', category: 'inverted', price: 10780, speed: 96, spin: 98, control: 78, stiffness: '硬め', weight: '48g', desc: 'スプリングスポンジX搭載。圧倒的な回転量と前陣での弧線高さで圧倒する最高峰ラバー。', combos: ['ビスカリア', 'ファンジェンドン ALC'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i2', name: 'ディグニクス09C', brand: 'Butterfly', category: 'inverted', price: 10780, speed: 90, spin: 99, control: 82, stiffness: 'かなり硬め', weight: '51g', desc: '微粘着性ハイテンション。粘着の回転量とハイテンションのスピードを極限融合。', combos: ['サイバーシェイプ', 'キョウヒョウ龍5'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i3', name: 'ディグニクス80', brand: 'Butterfly', category: 'inverted', price: 10780, speed: 94, spin: 93, control: 84, stiffness: '硬め', weight: '47g', desc: 'スピードとスピンの黄金比。前陣〜中陣でのオールラウンドな打球が魅力。', combos: ['張本智和 ALC'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i4', name: 'テナジー05', brand: 'Butterfly', category: 'inverted', price: 9790, speed: 91, spin: 96, control: 82, stiffness: 'やや硬め', weight: '46g', desc: '卓球界の歴史を変えた回転重視テンション。強烈な回転と美しい弧線を描く。', combos: ['インナーフォース ALC', 'アコースティック'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i5', name: 'テナジー80', brand: 'Butterfly', category: 'inverted', price: 9790, speed: 92, spin: 91, control: 85, stiffness: 'やや硬め', weight: '45g', desc: '回転とスピードの完璧なバランス。どんな展開でも打ち負けない万能性。', combos: ['ティモボル ALC'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i6', name: 'テナジー64', brand: 'Butterfly', category: 'inverted', price: 9790, speed: 95, spin: 86, control: 83, stiffness: 'ミディアム', weight: '44g', desc: '圧倒的なスピード性能。中・後陣からのスピードドライブや引き返しで威力を発揮。', combos: ['水谷隼 ZLC'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i7', name: 'テナジー05 FX', brand: 'Butterfly', category: 'inverted', price: 9790, speed: 88, spin: 94, control: 89, stiffness: '柔らかめ', weight: '42g', desc: '05の回転性能をそのままに、スポンジを柔らかくしてコントロールと打球感を向上。', combos: ['コロベル'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i8', name: 'ロゼナ (ROZENA)', brand: 'Butterfly', category: 'inverted', price: 5500, speed: 83, spin: 85, control: 91, stiffness: 'ミディアム', weight: '45g', desc: 'トレランス（許容性）を追求。打球のブレを補正し、ステップアップに最適な大人気ラバー。', combos: ['コロベル', 'スワット'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i9', name: 'ファスターク G-1', brand: 'Nittaku', category: 'inverted', price: 6930, speed: 89, spin: 94, control: 85, stiffness: 'やや硬め', weight: '47g', desc: '日本市場売上No.1クラスの超人気テンション。シートの引っ掛かり感と重いドライブが武器。', combos: ['アコースティック', 'スワット'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i10', name: 'ファスターク C-1', brand: 'Nittaku', category: 'inverted', price: 6380, speed: 85, spin: 89, control: 90, stiffness: 'ミディアム', weight: '43g', desc: 'G-1のシートに柔らかいスポンジ。安定感重視のバック面や中級者に最適。', combos: ['アコースティック', 'バイオリン'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i11', name: 'ハモンド Z2', brand: 'Nittaku', category: 'inverted', price: 7480, speed: 94, spin: 90, control: 84, stiffness: '硬め', weight: '48g', desc: 'トップ仕様のスピード＆スピン。ドライブの引き返しでも絶対に負けない強靭さ。', combos: ['アコースティックカーボン'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i12', name: 'キョウヒョウ NEO3', brand: 'Nittaku / DHS', category: 'inverted', price: 6380, speed: 75, spin: 99, control: 80, stiffness: 'かなり硬め', weight: '52g', desc: '粘着ラバーの代名詞。圧倒的な回転量と台上のピタッと止まるストップ性能。', combos: ['キョウヒョウ龍5', 'アコースティックカーボン'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i13', name: 'V>15 Extra', brand: 'VICTAS', category: 'inverted', price: 7700, speed: 93, spin: 92, control: 82, stiffness: '硬め', weight: '49g', desc: '丹羽孝希選手らトッププロ使用。相手の回転に負けない強靭なシートと強烈なカウンター。', combos: ['丹羽孝希ウッド'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i14', name: 'V>22 Double Extra', brand: 'VICTAS', category: 'inverted', price: 8250, speed: 95, spin: 94, control: 81, stiffness: '硬め', weight: '50g', desc: '7年の開発期間を経て誕生した最高峰フラッグシップ。スピードと威力を極限まで高めた。', combos: ['ビスカリア', '丹羽孝希ウッド'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i15', name: 'ヴェンタス レギュラー', brand: 'VICTAS', category: 'inverted', price: 3520, speed: 70, spin: 75, control: 96, stiffness: '柔らかめ', weight: '40g', desc: '初心者・入門者に圧倒的に支持されるコントロール抜群のエントリーモデル。', combos: ['スワット'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i16', name: 'ラクザ 7 (RAKZA 7)', brand: 'Yasaka', category: 'inverted', price: 6050, speed: 86, spin: 90, control: 88, stiffness: 'やや硬め', weight: '46g', desc: '天然ゴム主体のシートで抜群のグリップ力。ロングセラーの大定番ラバー。', combos: ['馬林エキストラオフェンシブ', 'スウェーデンクラシック'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i17', name: 'ラクザ X', brand: 'Yasaka', category: 'inverted', price: 6820, speed: 89, spin: 92, control: 86, stiffness: '硬め', weight: '48g', desc: 'プラスチックボールに最適化された強力なグリップ力。ノンスリップシート採用。', combos: ['馬林エキストラオフェンシブ'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i18', name: 'ラクザ Z', brand: 'Yasaka', category: 'inverted', price: 6600, speed: 82, spin: 97, control: 86, stiffness: '硬め', weight: '50g', desc: 'ラクザシリーズ初の粘着性ハイテンション。高い弧線と回転量でミスを激減。', combos: ['スワット'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i19', name: 'マークV (MARK V)', brand: 'Yasaka', category: 'inverted', price: 3960, speed: 65, spin: 72, control: 98, stiffness: 'ミディアム', weight: '40g', desc: '卓球界のレジェンド高弾性ラバー。基本技術を習得するための絶対的基準。', combos: ['スウェーデンクラシック'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i20', name: 'DNA プラチナ XH', brand: 'STIGA', category: 'inverted', price: 9900, speed: 96, spin: 91, control: 79, stiffness: 'かなり硬め', weight: '50g', desc: 'ドイツ製ハイテンションの最高峰。極薄シートによる圧倒的スピードと打球音。', combos: ['サイバーシェイプ'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i21', name: 'DNA プロ M', brand: 'STIGA', category: 'inverted', price: 7150, speed: 87, spin: 88, control: 88, stiffness: 'ミディアム', weight: '46g', desc: 'バランスに長けたミディアムスポンジ。幅広い層に対応する万能ラバー。', combos: ['クリッパーウッド'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i22', name: 'Q Quality (キュー クオリティ)', brand: 'Mizuno', category: 'inverted', price: 6380, speed: 88, spin: 91, control: 88, stiffness: 'やや硬め', weight: '46g', desc: '国産最高峰Qシリーズの扱いやすさを追求したモデル。素晴らしい引っ掛かり。', combos: ['フォルティウス FT'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i23', name: 'Q5', brand: 'Mizuno', category: 'inverted', price: 7480, speed: 92, spin: 93, control: 83, stiffness: '硬め', weight: '48g', desc: '独自開発エネルギーロス軽減スポンジ。ハードヒッター向けの強烈なエネルギー。', combos: ['フォルティウス FT'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i24', name: 'ヴェガ ヨーロッパ', brand: 'XIOM', category: 'inverted', price: 4620, speed: 80, spin: 83, control: 94, stiffness: '柔らかめ', weight: '41g', desc: 'コスパ最強モンスター。柔らかく大きなスイートエリアで誰でもドライブが入る。', combos: ['スワット', 'ヴェガヨーロッパ'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i25', name: 'ヴェガ プロ', brand: 'XIOM', category: 'inverted', price: 4620, speed: 86, spin: 90, control: 86, stiffness: 'やや硬め', weight: '47g', desc: '硬めのスポンジで鋭い回転とスピード。価格を超えた高性能ラバー。', combos: ['アイスクリーム AZX'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i26', name: 'オメガ VII ツアー', brand: 'XIOM', category: 'inverted', price: 8580, speed: 95, spin: 93, control: 80, stiffness: 'かなり硬め', weight: '50g', desc: 'サイクロイド技術搭載。低い弾道とスピードで相手を置き去りにするプロモデル。', combos: ['アイスクリーム AZX'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i27', name: 'エボリューション MX-P', brand: 'TIBHAR', category: 'inverted', price: 7480, speed: 93, spin: 92, control: 82, stiffness: '硬め', weight: '49g', desc: '威力重視テンション。打球時のエネルギー伝達が最高レベルで重いボールが走る。', combos: ['ストラタスパワーウッド'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i28', name: 'ハイブリッド K3', brand: 'TIBHAR', category: 'inverted', price: 9350, speed: 92, spin: 98, control: 83, stiffness: '硬め', weight: '50g', desc: '微粘着と高弾性スポンジの融合。トッププロから絶大な支持を集める話題作。', combos: ['ビスカリア'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i29', name: 'ブルーグリップ C2', brand: 'DONIC', category: 'inverted', price: 8250, speed: 88, spin: 97, control: 84, stiffness: '硬め', weight: '51g', desc: '粘着性トップシートと強力フォームスポンジ。圧倒的な回転の重み。', combos: ['ワルドナー OFF'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i30', name: 'ブルーストーム Z1 ターボ', brand: 'DONIC', category: 'inverted', price: 7150, speed: 94, spin: 88, control: 81, stiffness: '硬め', weight: '47g', desc: '薄シート大気泡スポンジ。スピード性能に特化した爽快な打球感。', combos: ['ワルドナー OFF'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i31', name: 'ヴェガ アジア', brand: 'XIOM', category: 'inverted', price: 4620, speed: 85, spin: 82, control: 88, stiffness: 'ミディアム', weight: '44g', desc: '前陣速攻・スマッシュのしやすさを追求したスピード志向のヴェガ。', combos: ['スワット'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i32', name: 'フライアット カーボン', brand: 'Nittaku', category: 'inverted', price: 4950, speed: 80, spin: 80, control: 92, stiffness: 'ミディアム', weight: '40g', desc: '軽量で扱いやすい。スピード感ある打球が誰でも手軽に打てる。', combos: ['アルティウス ST5'], rating: 4.5, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i33', name: 'スピンアート', brand: 'Butterfly', category: 'inverted', price: 8580, speed: 82, spin: 96, control: 85, stiffness: '硬め', weight: '49g', desc: 'バタフライ初の粘着性ハイテンション。重いカットや粘着ドライブに。', combos: ['吉田海偉'], rating: 4.5, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i34', name: 'ライザン 50', brand: 'Mizuno', category: 'inverted', price: 6160, speed: 86, spin: 89, control: 87, stiffness: '硬め', weight: '47g', desc: '高い弧線と強い回転を生み出す高いグリップ力。', combos: ['フォルティウス FT'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'i35', name: 'VS>401', brand: 'VICTAS', category: 'inverted', price: 6160, speed: 70, spin: 95, control: 92, stiffness: 'かなり硬め', weight: '52g', desc: '松下浩二氏開発。カットの劇的な抑止力と強力な反撃ドライブを両立。', combos: ['松下浩二'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+
+            // PIPS-OUT & SPECIAL RUBBERS (表ソフト / 粒高 / アンチ 20 items)
+            { id: 'p1', name: 'モリスト SP (MORISTO SP)', brand: 'Nittaku', category: 'pips-out', price: 5280, speed: 92, spin: 70, control: 88, stiffness: 'ミディアム', weight: '36g', desc: '伊藤美誠選手使用！超ナックルとナックル性速攻で相手を圧倒する表ソフトの超ベストセラー。', combos: ['アコースティックカーボン'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'p2', name: 'モリスト SP AX', brand: 'Nittaku', category: 'pips-out', price: 5830, speed: 94, spin: 76, control: 85, stiffness: 'やや硬め', weight: '38g', desc: 'モリストSPに回転性能を追加。ドライブも打ちやすい進化形表ソフト。', combos: ['アコースティックカーボン'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'p3', name: 'VO>102', brand: 'VICTAS', category: 'pips-out', price: 5500, speed: 93, spin: 78, control: 86, stiffness: 'ミディアム', weight: '37g', desc: '横粒仕様。ハイテンション技術により裏ソフト並みの回転量と強烈なミート打ちを実現。', combos: ['丹羽孝希ウッド'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'p4', name: 'VO>101', brand: 'VICTAS', category: 'pips-out', price: 5500, speed: 95, spin: 62, control: 82, stiffness: 'ミディアム', weight: '35g', desc: '縦粒仕様。直線的な鋭い弾道と揺れるナックルボールで相手のミスを誘う。', combos: ['スワット'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'p5', name: 'インパーシャル XS', brand: 'Butterfly', category: 'pips-out', price: 6600, speed: 89, spin: 80, control: 87, stiffness: 'やや硬め', weight: '38g', desc: '表ソフト最高峰のスピン性能。表ソフトでありながら強烈なドライブが可能。', combos: ['ビスカリア'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'p6', name: 'スペクトル S1', brand: 'VICTAS', category: 'pips-out', price: 4400, speed: 85, spin: 68, control: 92, stiffness: 'ミディアム', weight: '35g', desc: '王道表ソフト。長年世界中のスピード系前陣速攻選手に愛され続ける名作。', combos: ['クリッパーウッド'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'p7', name: 'ラクザ PO', brand: 'Yasaka', category: 'pips-out', price: 5500, speed: 90, spin: 75, control: 88, stiffness: 'やや硬め', weight: '38g', desc: 'ハイブリッドエナジー搭載。ナックルボールと弾みのバランスが絶妙。', combos: ['馬林エキストラオフェンシブ'], rating: 4.6, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+
+            // LONG PIPS (粒高 8 items)
+            { id: 'l1', name: 'カール P1V (CURL P1V)', brand: 'VICTAS', category: 'long-pips', price: 4180, speed: 40, spin: 98, control: 80, stiffness: '柔らかめ', weight: '28g', desc: '世界中のカットマン・変化攻撃選手が愛用する最も変化度の高い切れ味抜群の粒高。', combos: ['松下浩二'], rating: 4.9, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'l2', name: 'カール P3V', brand: 'VICTAS', category: 'long-pips', price: 4180, speed: 45, spin: 85, control: 92, stiffness: 'ミディアム', weight: '29g', desc: '変化度と扱いやすさを両立。初めての粒高ラバーにもおすすめ。', combos: ['松下浩二'], rating: 4.7, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'l3', name: 'フェイント ロングIII', brand: 'Butterfly', category: 'long-pips', price: 3850, speed: 42, spin: 92, control: 90, stiffness: '柔らかめ', weight: '27g', desc: '粒が倒れやすく相手の回転を殺して強烈な切れ味のブツ切りカットが可能。', combos: ['松下浩二'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'l4', name: 'グラス D.TecS (Grass D.TecS)', brand: 'TIBHAR', category: 'long-pips', price: 6380, speed: 60, spin: 95, control: 72, stiffness: 'ぐにゃぐにゃ', weight: '26g', desc: '強烈なテンション効果が生み出す予測不能の凶悪な変化ボール。前陣ブロックで威力を発揮。', combos: ['バイオリン'], rating: 4.8, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'l5', name: 'ウォルター (WALLACE)', brand: 'DONIC', category: 'long-pips', price: 4620, speed: 48, spin: 88, control: 88, stiffness: 'ミディアム', weight: '28g', desc: '安定したカット打ちと攻守兼備の変化プレーに対応。', combos: ['ワルドナー OFF'], rating: 4.5, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+
+            // ANTI-SPIN (アンチ 3 items)
+            { id: 'a1', name: 'スーパーアンチ', brand: 'Butterfly', category: 'anti-spin', price: 3300, speed: 50, spin: 20, control: 95, stiffness: '柔らかめ', weight: '32g', desc: '相手の強烈な回転を完全に無効化して不規則な変化球で惑わせるアンチラバー。', combos: ['コロベル'], rating: 4.4, imageUrl: RAKUTEN_DEFAULT_IMAGE },
+            { id: 'a2', name: 'ベストアンチ', brand: 'Nittaku', category: 'anti-spin', price: 3850, speed: 52, spin: 22, control: 94, stiffness: 'ミディアム', weight: '33g', desc: 'ツッツキやレシーブのミスを大幅軽減。トリッキーな変化でナックルを量産。', combos: ['アコースティック'], rating: 4.5, imageUrl: RAKUTEN_DEFAULT_IMAGE }
+        ];
+
+        /* ==========================================================
+           1-A. EXTENDED EQUIPMENT CATALOG (426 additional models)
+           ========================================================== */
+        const extendedCatalogNames = ["Tibhar Stratus Powerwood", "Tibhar Samsonov Premium Junior", "Tibhar MK 7", "Andro Treiber CO ALL/S", "Tibhar Felix Lebrun ALL", "Tibhar Alexis Lebrun ALL+", "Shori Hyperion S-AC", "Shori Pandora", "Shori Hydra", "Shori Calypso", "Imperial Royal Carbon Offensive", "STIGA Destiny Carbon OFF", "KTS PROBLADE FORGE 3K OFF", "Yinhe Pro-01G", "Andro Wosik Legacy OFF", "Sanwei Breeze Off", "Dr. Neubauer Bloodhound ALL+", "Dr. Neubauer Bulldog", "Dr. Neubauer Colossus", "Dr. Neubauer Matador Hybrid Carbon", "Dr. Neubauer Matador Titan", "Loki W81 Pro Outer (ALC)", "DHS 506A", "Loki Telson speed", "Tibhar Yuto Def", "Sunflex MYS Allround", "Sunflex Team Hong Kong PYM", "Eakent Blade Handmade Aurora X1", "XIOM Indeed ZLXi", "XIOM Chrome XAXi", "XIOM Hugo ALXi PRO", "XIOM Tetra TMXi", "XIOM Tetra TMX", "XIOM Artemis ALXi", "XIOM Artemis ALX", "XIOM Indeed ZLX", "DONIC Skachkov Carbospeed", "DONIC Persson Jubilee 40", "DONIC Zentra Next Carbon", "DONIC Zentra First Allround", "DONIC Anders Lind Exceptional", "DONIC Whiper Inner Carbon", "DONIC Whiper Outer Carbon", "Gewo An Jaehyun Carbon Basic", "Gewo Matrixx Magic OFF", "Gewo Talent ALL", "JOOLA Hugo Calderano KL-c Inner", "JOOLA PROline IAC", "Victas Magnass Off+", "Sword Diamond Forest", "Nittaku H301 NXD", "Impact Pure Defense Blade", "Custom Table Tennis Defensive Blade", "Inkunzi A- 82 / Carbon Off+", "Komann Rose VII Off+", "Handmade by Levi 2021 Comci C", "Goziptong NANO 300 Hinoki 3C7", "Gauder Conzept for Power 7", "Tuttle Dream Combi Wood", "Double Fish Shi Wen DF-W2", "Artte Telai Delirio", "Chulong Nie Blade ALC", "Arbalest Horsa", "DONIC Dotec All+", "Joola Hugo Calderano ARY-C", "Tibhar Darko Jorgic Infinity Carbon", "Palio Halberd Off", "Gewo Prithika Pavade ARC Off", "Gewo Matrixx Hybrid ARC Inner Off", "Loki Telson Power", "Sword VSEA", "Darker Liberta Solid Pro", "Andro Kinetic CF Carbon OFF-", "Gerry Handcraft Super Black Panther", "Futurespin Innercarbon Off", "Tom´s Hand Crafted Blades Production Number 1079", "TMount STARDUST Silver Night OFF", "Siam PingPong Handmade Phuchong Special Blade OFF", "VT Mahagon Off", "SDCblades#1230 Basalt Outer Off", "Maestro-TT Handcrafted Table Tennis Blade 0001 OFF", "Dymax Zenturio Off+", "Custom Blades by Marc Gaser Backspin Light Softcarbon All-H", "Mamba Blades Furiosa Power 7 Max", "Butz Blades Hybrid Def", "Akkadi K1", "Nittaku Rorin", "Nittaku Acoustic SG", "Nittaku Acoustic G-revision", "Rally Ace HINOKEN EN", "Armstrong ASSUKU No.5 Special", "Armstrong Castelilan", "Banda Waldner light", "Ergopong Ergofit Sentinel ALL", "Ergopong Ergofit Shield DEF+", "Ergopong Ergofit Vernier ALL+", "Ergopong Ergofit Micron OFF", "Ergopong Ergofit Edge OFF+", "Slazenger Margaret Peggy Franks", "Barna Original Champion Def", "KTS Limited Edition-PEN (JP) OFF", "Valor American Chopper", "Ergopong ERGOFIT TORQUE OFF +", "Cor Du Buy Hans Wilhelm Gäb", "Skitt Carbo Light OFF", "CC Bladecraft Catalyst OFF-SPD", "Pfannschmidt 215", "Heinsa Japan Hinoki Off+", "Spinlord First Strike III", "DONIC ORIGINAL SENSO V1", "TTMaster Sensitive Defense Def", "Banco Balsa Speed OFF", "MANUFAKTUR MEYER & SPYCHALA No. XXV EXCLUSIV", "Tischtennis-Manufaktur KFD Orginal", "Maxi Pong Maxi 1 Defensive Table Tennis Blade", "STIGA LUMA Hybrid Carbon", "Sanwei Two Face Soft Punch", "Sanwei Two Face", "Nittaku Combi Wood Defence", "Zsakambo The Shark", "Ulmo Shark Attack", "Schildkröt Futec", "Chulong Nie Nie Chulong ALC", "Mr-Tischtennis Defence", "Andro TP_Ligna Def", "JZ XCalibur the Invincible Power Version 6", "Artte Telai ITALIA DEF", "61 Second 3003 Super Light", "AeronovaTischtennis Core All", "AeronovaTischtennis Absorber Def", "Tibhar Titan II", "Tibhar Velociti Carbon ALC", "Tibhar Oh Junsung", "Butterfly Mizutani Jun Major", "Butterfly Timo Boll 30th Anniversary Edition", "Butterfly Timo Boll J", "Butterfly Timo Boll TJ", "Butterfly Balsa Carbo X7", "XIOM Novus 19 Strato", "XIOM Novus 19 Allround S", "XIOM Hugo Supreme TMXi Pro", "XIOM Hugo Supreme ALX Pro", "XIOM LSS ALX Lite", "Darker 5P-2A.Ri", "Double Fish Project-Z", "Adidas Accelum High Speed Carbon", "Adidas Avenger 5", "Adidas Avenger 7", "Adidas Avenger Carbon", "Adidas C100 OFF", "Adidas C300 OFF", "Adidas C500 OFF+", "Adidas Challenge Force", "Adidas Challenge Light", "Adidas Challenge Speed", "Adidas FiberTec Classic", "Adidas FiberTec Extreme", "Adidas FiberTec Power", "Adidas Hypertouch", "Adidas Radix Express", "Adidas Radix Impress", "Adidas Radix Ultimate", "Adidas Strike Carbon", "Adidas Strike Wood 5", "Andro Blax ALL+", "Andro Blax OFF", "Andro Carbon Compact OFF-", "Andro Core 7 OFF", "Andro Core 7 OFF+", "Andro CS5 ALL+", "Tibhar Infinity MX-S", "Bomb Talent", "STIGA Helix Hybrid XH", "Tibhar Infinity MX-P", "JOOLA Trinity Hugo Calderano Dynamic", "JOOLA Trinity Hugo Calderano Charged", "STIGA Helix Hybrid H", "Tulpe JQK Diamond-J", "Victas Spectol S3", "Victas Spinpips D1", "Victas Spinpips D2", "Victas Spinpips D3", "Victas V Large L1", "Victas V Large L2", "Victas V Large L3", "Victas VLB > 301", "Victas VO > 101", "Victas VO > 102", "Victas VO > 103", "Winning NP-1", "Winning NP-2", "Winning NP-6", "Winning NP-8", "XIOM Styx SP", "XIOM Vega SPO", "Yasaka A-1.2", "Yasaka Cobalt", "Yasaka Cobalt Alpha", "Yasaka Cobalt X2", "Yasaka Elfrark", "Yasaka Large Pro", "Yasaka Marvelous", "Yasaka Original LB", "Yasaka Original Pimples Out", "Yasaka Original T-Version", "Yasaka PB-1", "Yasaka Rakza PO", "Yasaka Spinate", "Yasaka Xtend LB", "Yasaka Xtend PO", "Yinhe Pluto", "Yinhe Uranus", "Yinhe Uranus Poly", "Yinhe Uranus Pro", "Andro Classic", "Andro Hexer Pips", "Andro Hexer Pips Force", "Andro Revolution C.O.R.", "Armstrong AKA Mark 1-1", "Armstrong AKA Mark 1-4", "Armstrong AKA Mark Max", "Armstrong Attack 8 - 48 - M Hard Hitter", "Armstrong Attack 8 EXX", "Armstrong Attack 8 Super Hard Hitter - M", "Armstrong Attack 8 Super I 41 M", "Armstrong Attack 8 Super Yellow M", "Armstrong Hikari SR7 42", "Armstrong Rosin", "Armstrong W-Alpha EXX", "Barna Original Legend Classic", "Barna Original Legend Fire", "Barna Original Legend Half Long", "Bomb Hammer G.TENSION", "Bomb Hammer Gokuusu Hammer Ultra-Thin", "Bomb Hammer Ultra-Thin", "Butterfly Bugller", "Butterfly Challenger Attack", "Butterfly Flarestorm", "Butterfly Flarestorm 2", "Butterfly Impartial XB", "Butterfly Impartial XS", "Butterfly Orthodox", "Butterfly Raystorm", "Butterfly Speedy P.O.", "Butterfly Speedy P.O. Soft", "Dawei 388B", "Dawei 388B-1", "Dawei 388C-3 Killer", "Der Materialspezialist Breakout", "Der Materialspezialist Firestorm", "Der Materialspezialist Firestorm Green Storm", "Der Materialspezialist Firestorm Soft", "Der Materialspezialist Hellcat", "Der Materialspezialist Hellracer", "Der Materialspezialist L.S.D. Long Super Defence", "Der Materialspezialist Outkill", "Der Materialspezialist Power Pipes", "Der Materialspezialist Predator", "Der Materialspezialist Shockwave", "Der Materialspezialist Wildfire", "DHS 651", "DHS 652", "DHS Dragonow", "DHS Sharping 2", "DONIC Baxster D25", "DONIC Baxter LB", "Double Fish 820", "Double Fish DF16", "Double Fish Prasidha 820A", "Dr. Neubauer Explosion", "Dr. Neubauer Explosion Extreme", "Dr. Neubauer Explosion Pro", "Dr. Neubauer Killer", "Dr. Neubauer Killer Pro", "Dr. Neubauer Killer Pro Evo", "Dr. Neubauer Killer Soft", "Dr. Neubauer Nugget", "Dr. Neubauer Pistol", "Dr. Neubauer Pistol 2", "Dr. Neubauer Tornado Extreme", "Dr. Neubauer Tornado Supreme", "Dr. Neubauer Tornado Ultra", "Friendship-729 799 Super Warrior Provincial", "Friendship-729 802", "Friendship-729 802-1", "Friendship-729 802-1 Mystery II", "Friendship-729 802-40", "Friendship-729 802-40 Mystery III", "Friendship-729 802 Mystery III", "Friendship-729 Dr. Evil", "Friendship-729 LEGEND 105", "Gambler GXS", "Gambler GXS Oh-Toro", "Gambler Vintage", "Giant Dragon 8228A First Class", "Giant Dragon Blast", "Giant Dragon Turbo 612", "Globe 889", "Globe 889-2", "Haifu Dolphin Tuned", "Haifu Dolphin Untuned", "Haifu Penguin Tuned", "Haifu Penguin Untuned", "Hallmark Magic Pips", "JOOLA Amigo", "JOOLA CWX", "JOOLA Snabb", "Juic Offense Ultima", "Juic Patisuma", "Juic Patisuma 2", "Juic Patisuma 2 Hard", "Juic Pips Ace", "Juic Pips Ace Topspeed", "Kokutaku 110 Random", "Kokutaku 119", "Kokutaku 119 Curb", "Lion Firearms", "Loki Kirin SP", "Meteor 575", "Meteor 845", "Mizuno Booster EV", "Mizuno Booster HP", "Mizuno Booster SA", "Nittaku Beautry", "Nittaku Express", "Nittaku Grastory 44", "Nittaku Hammond FA", "Nittaku Hammond FA Speed", "Nittaku Hayate 44", "Nittaku Jewellarge", "Nittaku Moristo 44", "Nittaku Moristo SP AX", "Nittaku Pimple Slide", "Nittaku Pimplemini One", "Nittaku Royal Large", "Nittaku Sharping", "Nittaku Sonic AR", "Nittaku Specialist One", "Nittaku Specialist Start", "Nittaku Specialist X", "Palio Flying Dragon", "Palio Power Dragon", "Sanwei Ghost", "Sauer & Troger Hass", "Sauer & Troger Zargus", "Se7en 7.01sp", "Spinlord Degu", "Spinlord Degu II", "Spinlord Gepard", "Spinlord Waran", "Spinlord Waran II", "Spinlord Waran III", "Spintech Stealth", "STIGA Clippa", "STIGA Radical", "STIGA Royal", "STIGA Symmetry", "Sunflex Splinter", "Sword Long Can", "Tibhar Speedy Soft", "Tibhar Speedy Soft D.TecS", "Tibhar Speedy Soft MY", "XIOM Omega 8 China", "XIOM Omega 8 Pro", "XIOM Omega VIII China", "XIOM Omega VIII Euro", "XIOM Omega VIII Pro", "Yasaka Psych Dragon", "Andro NUZN 45", "Butterfly Zyre 03", "DONIC BlueGrip J1", "DONIC BlueGrip J2", "DONIC BlueGrip J3", "Friendship-729 Battle III Tiger 4", "Gambler X3 Diamond", "Guo Qiu Gong Fu", "KTS Master G52", "Loki Kirin K5", "Sanwei Target National Player Edition", "Skitt Sniper", "STIGA Helix Platinum 55", "STIGA Helix Platinum H", "STIGA Helix Platinum M", "STIGA Helix Platinum XH", "Victas SWAT Spin", "Tibhar Hybrid K3 Pro", "Mizuno Q Power", "Nittaku Genextion", "Nittaku Genextion V2C", "STIGA DNA Dragon Power 52.5", "STIGA DNA Dragon Power 55", "STIGA DNA Dragon Power 57.5", "XIOM Omega VIII Hybrid", "XIOM Vega Korea", "AeronovaTischtennis Ares", "Andro Achanta Legacy OFF", "Andro Eloi Legacy OFF/S", "DHS Hurricane 301 H", "Butterfly Omar Assar Innerforce ZLC", "Butterfly Outerforce ALC", "Butterfly Outerforce CAF", "Butterfly Outerforce ZLC", "Nittaku Acoustic Carbon Inner G-Revision", "STIGA Destiny Carbon", "Yasaka Myth Carbon", "Butterfly Innerforce Layer ALC.S", "Butterfly Viscaria Super ALC", "Butterfly Harimoto Innerforce Super ZLC", "Butterfly Lin Yun-Ju Super ZLC", "Butterfly Ovtcharov Innerforce ALC", "Butterfly Freitas ALC", "Butterfly Apollonia ZLC", "Nittaku Acoustic Carbon Inner 5.8", "Nittaku Acoustic Carbon Outer 5.8", "Nittaku Hina Hayata E2", "Nittaku Hina Hayata T2", "Victas Koki Niwa ZC Inner", "Victas Gladias AR", "Victas Gladias EX", "Victas Gladias HA", "Yasaka Myth Extra Offensive", "Yasaka Myth Soft Carbon", "Yasaka Myth Extra Special", "Loki Kirin K7", "DHS Hurricane 301 National", "Stiga Destiny Carbon Cybershape"];
+        const extendedReleaseYears = {
+            2026: ["AeronovaTischtennis Ares", "Akkadi K1", "Andro Achanta Legacy OFF", "Andro Eloi Legacy OFF/S", "Armstrong Castelilan", "DHS Hurricane 301 H", "DONIC Zentra First Allround", "DONIC Zentra Next Carbon", "Gewo An Jaehyun Carbon Basic", "Gewo Matrixx Magic OFF", "Gewo Talent ALL", "JOOLA Hugo Calderano KL-c Inner", "JOOLA Trinity Hugo Calderano Charged", "KTS Limited Edition-PEN (JP) OFF", "Rally Ace HINOKEN EN", "STIGA LUMA Hybrid Carbon", "Spinlord First Strike III", "Sword Diamond Forest", "Tibhar Darko Jorgic Infinity Carbon", "Tibhar Infinity MX-P", "Tibhar Infinity MX-S", "Tibhar Yuto Def", "Victas Magnass Off+", "XIOM Chrome XAXi", "XIOM Indeed ZLXi", "Yinhe Pro-01G"],
+            2025: ["Butterfly Omar Assar Innerforce ZLC", "Butterfly Outerforce ALC", "Butterfly Outerforce CAF", "Butterfly Outerforce ZLC", "Nittaku H301 NXD", "STIGA Destiny Carbon", "Yasaka Myth Carbon"],
+            2024: ["Butterfly Harimoto Innerforce Super ZLC", "DHS Hurricane 301 National", "Nittaku Acoustic Carbon Inner 5.8", "Nittaku Acoustic Carbon Inner G-Revision", "Nittaku Acoustic Carbon Outer 5.8", "Nittaku Hina Hayata E2", "Nittaku Hina Hayata T2", "Stiga Destiny Carbon Cybershape", "Victas Gladias AR", "Victas Gladias EX", "Victas Gladias HA"]
+        };
+        const extendedRubberNames = new Set(["Tibhar Infinity MX-S", "Bomb Talent", "STIGA Helix Hybrid XH", "Tibhar Infinity MX-P", "JOOLA Trinity Hugo Calderano Dynamic", "JOOLA Trinity Hugo Calderano Charged", "STIGA Helix Hybrid H", "Tulpe JQK Diamond-J", "Victas Spectol S3", "Victas Spinpips D1", "Victas Spinpips D2", "Victas Spinpips D3", "Victas V Large L1", "Victas V Large L2", "Victas V Large L3", "Victas VLB > 301", "Victas VO > 101", "Victas VO > 102", "Victas VO > 103", "Winning NP-1", "Winning NP-2", "Winning NP-6", "Winning NP-8", "XIOM Styx SP", "XIOM Vega SPO", "Yasaka A-1.2", "Yasaka Cobalt", "Yasaka Cobalt Alpha", "Yasaka Cobalt X2", "Yasaka Elfrark", "Yasaka Large Pro", "Yasaka Marvelous", "Yasaka Original LB", "Yasaka Original Pimples Out", "Yasaka Original T-Version", "Yasaka PB-1", "Yasaka Rakza PO", "Yasaka Spinate", "Yasaka Xtend LB", "Yasaka Xtend PO", "Yinhe Pluto", "Yinhe Uranus", "Yinhe Uranus Poly", "Yinhe Uranus Pro", "Andro Classic", "Andro Hexer Pips", "Andro Hexer Pips Force", "Andro Revolution C.O.R.", "Armstrong AKA Mark 1-1", "Armstrong AKA Mark 1-4", "Armstrong AKA Mark Max", "Armstrong Attack 8 - 48 - M Hard Hitter", "Armstrong Attack 8 EXX", "Armstrong Attack 8 Super Hard Hitter - M", "Armstrong Attack 8 Super I 41 M", "Armstrong Attack 8 Super Yellow M", "Armstrong Hikari SR7 42", "Armstrong Rosin", "Armstrong W-Alpha EXX", "Barna Original Legend Classic", "Barna Original Legend Fire", "Barna Original Legend Half Long", "Bomb Hammer G.TENSION", "Bomb Hammer Gokuusu Hammer Ultra-Thin", "Bomb Hammer Ultra-Thin", "Butterfly Bugller", "Butterfly Challenger Attack", "Butterfly Flarestorm", "Butterfly Flarestorm 2", "Butterfly Impartial XB", "Butterfly Impartial XS", "Butterfly Orthodox", "Butterfly Raystorm", "Butterfly Speedy P.O.", "Butterfly Speedy P.O. Soft", "Dawei 388B", "Dawei 388B-1", "Dawei 388C-3 Killer", "Der Materialspezialist Breakout", "Der Materialspezialist Firestorm", "Der Materialspezialist Firestorm Green Storm", "Der Materialspezialist Firestorm Soft", "Der Materialspezialist Hellcat", "Der Materialspezialist Hellracer", "Der Materialspezialist L.S.D. Long Super Defence", "Der Materialspezialist Outkill", "Der Materialspezialist Power Pipes", "Der Materialspezialist Predator", "Der Materialspezialist Shockwave", "Der Materialspezialist Wildfire", "DHS 651", "DHS 652", "DHS Dragonow", "DHS Sharping 2", "DONIC Baxster D25", "DONIC Baxter LB", "Double Fish 820", "Double Fish DF16", "Double Fish Prasidha 820A", "Dr. Neubauer Explosion", "Dr. Neubauer Explosion Extreme", "Dr. Neubauer Explosion Pro", "Dr. Neubauer Killer", "Dr. Neubauer Killer Pro", "Dr. Neubauer Killer Pro Evo", "Dr. Neubauer Killer Soft", "Dr. Neubauer Nugget", "Dr. Neubauer Pistol", "Dr. Neubauer Pistol 2", "Dr. Neubauer Tornado Extreme", "Dr. Neubauer Tornado Supreme", "Dr. Neubauer Tornado Ultra", "Friendship-729 799 Super Warrior Provincial", "Friendship-729 802", "Friendship-729 802-1", "Friendship-729 802-1 Mystery II", "Friendship-729 802-40", "Friendship-729 802-40 Mystery III", "Friendship-729 802 Mystery III", "Friendship-729 Dr. Evil", "Friendship-729 LEGEND 105", "Gambler GXS", "Gambler GXS Oh-Toro", "Gambler Vintage", "Giant Dragon 8228A First Class", "Giant Dragon Blast", "Giant Dragon Turbo 612", "Globe 889", "Globe 889-2", "Haifu Dolphin Tuned", "Haifu Dolphin Untuned", "Haifu Penguin Tuned", "Haifu Penguin Untuned", "Hallmark Magic Pips", "JOOLA Amigo", "JOOLA CWX", "JOOLA Snabb", "Juic Offense Ultima", "Juic Patisuma", "Juic Patisuma 2", "Juic Patisuma 2 Hard", "Juic Pips Ace", "Juic Pips Ace Topspeed", "Kokutaku 110 Random", "Kokutaku 119", "Kokutaku 119 Curb", "Lion Firearms", "Loki Kirin SP", "Meteor 575", "Meteor 845", "Mizuno Booster EV", "Mizuno Booster HP", "Mizuno Booster SA", "Nittaku Beautry", "Nittaku Express", "Nittaku Grastory 44", "Nittaku Hammond FA", "Nittaku Hammond FA Speed", "Nittaku Hayate 44", "Nittaku Jewellarge", "Nittaku Moristo 44", "Nittaku Moristo SP AX", "Nittaku Pimple Slide", "Nittaku Pimplemini One", "Nittaku Royal Large", "Nittaku Sharping", "Nittaku Sonic AR", "Nittaku Specialist One", "Nittaku Specialist Start", "Nittaku Specialist X", "Palio Flying Dragon", "Palio Power Dragon", "Sanwei Ghost", "Sauer & Troger Hass", "Sauer & Troger Zargus", "Se7en 7.01sp", "Spinlord Degu", "Spinlord Degu II", "Spinlord Gepard", "Spinlord Waran", "Spinlord Waran II", "Spinlord Waran III", "Spintech Stealth", "STIGA Clippa", "STIGA Radical", "STIGA Royal", "STIGA Symmetry", "Sunflex Splinter", "Sword Long Can", "Tibhar Speedy Soft", "Tibhar Speedy Soft D.TecS", "Tibhar Speedy Soft MY", "XIOM Omega 8 China", "XIOM Omega 8 Pro", "XIOM Omega VIII China", "XIOM Omega VIII Euro", "XIOM Omega VIII Pro", "Yasaka Psych Dragon", "Andro NUZN 45", "Butterfly Zyre 03", "DONIC BlueGrip J1", "DONIC BlueGrip J2", "DONIC BlueGrip J3", "Friendship-729 Battle III Tiger 4", "Gambler X3 Diamond", "Guo Qiu Gong Fu", "KTS Master G52", "Loki Kirin K5", "Sanwei Target National Player Edition", "Skitt Sniper", "STIGA Helix Platinum 55", "STIGA Helix Platinum H", "STIGA Helix Platinum M", "STIGA Helix Platinum XH", "Victas SWAT Spin", "Tibhar Hybrid K3 Pro", "Mizuno Q Power", "Nittaku Genextion", "Nittaku Genextion V2C", "STIGA DNA Dragon Power 52.5", "STIGA DNA Dragon Power 55", "STIGA DNA Dragon Power 57.5", "XIOM Omega VIII Hybrid", "XIOM Vega Korea"]);
+        const extendedPipsOutNames = new Set(["Andro Classic", "Andro Hexer Pips", "Andro Hexer Pips Force", "Andro Revolution C.O.R.", "Bomb Talent", "STIGA Helix Hybrid XH", "Tulpe JQK Diamond-J", "Victas Spectol S3", "Victas Spinpips D1", "Victas Spinpips D2", "Victas Spinpips D3", "Victas V Large L1", "Victas V Large L2", "Victas V Large L3", "Victas VLB > 301", "Victas VO > 101", "Victas VO > 102", "Victas VO > 103", "Winning NP-1", "Winning NP-2", "Winning NP-6", "Winning NP-8", "XIOM Styx SP", "XIOM Vega SPO", "Yasaka A-1.2", "Yasaka Cobalt", "Yasaka Cobalt Alpha", "Yasaka Cobalt X2", "Yasaka Elfrark", "Yasaka Large Pro", "Yasaka Marvelous", "Yasaka Original LB", "Yasaka Original Pimples Out", "Yasaka Original T-Version", "Yasaka PB-1", "Yasaka Rakza PO", "Yasaka Spinate", "Yasaka Xtend LB", "Yasaka Xtend PO", "Yinhe Pluto", "Yinhe Uranus", "Yinhe Uranus Poly", "Yinhe Uranus Pro"]);
+        const extendedLongPipsNames = new Set(["Bomb Talent", "Dr. Neubauer Killer", "Dr. Neubauer Killer Pro", "Dr. Neubauer Killer Pro Evo", "Dr. Neubauer Killer Soft", "Dr. Neubauer Nugget", "Dr. Neubauer Pistol", "Dr. Neubauer Pistol 2", "Dr. Neubauer Tornado Extreme", "Dr. Neubauer Tornado Supreme", "Dr. Neubauer Tornado Ultra", "Friendship-729 Dr. Evil", "Hallmark Magic Pips", "Spintech Stealth", "Tulpe JQK Diamond-J"]);
+
+        function extendedBrandFromName(name) {
+            const rules = [
+                ['Der Materialspezialist','Der Materialspezialist'],['Friendship-729','Friendship-729'],['Dr. Neubauer','Dr. Neubauer'],
+                ['Butterfly','Butterfly'],['Nittaku','Nittaku'],['VICTAS','VICTAS'],['Victas','VICTAS'],['Yasaka','Yasaka'],['STIGA','STIGA'],
+                ['XIOM','XIOM'],['Xiom','XIOM'],['Mizuno','Mizuno'],['Tibhar','TIBHAR'],['DONIC','DONIC'],['Andro','Andro'],['Gewo','GEWO'],
+                ['JOOLA','JOOLA'],['Joola','JOOLA'],['Loki','Loki'],['Yinhe','Yinhe'],['DHS','DHS'],['Sanwei','Sanwei'],['Sword','Sword'],
+                ['Armstrong','Armstrong'],['Adidas','Adidas'],['Gambler','Gambler'],['Giant Dragon','Giant Dragon'],['Kokutaku','Kokutaku'],
+                ['Juic','JUIC'],['JUIC','JUIC'],['Spinlord','Spinlord'],['Sauer & Troger','Sauer & Troger'],['Haifu','Haifu'],['Hallmark','Hallmark'],
+                ['Globe','Globe'],['Dawei','Dawei'],['Meteor','Meteor'],['Palio','Palio'],['Winning','Winning'],['KTS','KTS'],['Bomb','Bomb'],
+                ['Barna','Barna'],['Tulpe','Tulpe'],['Se7en','Se7en'],['Sunflex','Sunflex'],['Darker','Darker'],['Double Fish','Double Fish'],
+                ['TSP','TSP'],['TTMaster','TTMaster'],['Gauder','Gauder'],['Tuttle','Tuttle'],['Arbalest','Arbalest'],['Inkunzi','Inkunzi'],
+                ['Goziptong','Goziptong'],['Artte Telai','Artte Telai'],['CC Bladecraft','CC Bladecraft'],['Cor Du Buy','Cor Du Buy'],['Skitt','Skitt'],
+                ['Heinsa','Heinsa'],['AeronovaTischtennis','AeronovaTischtennis'],['Maestro-TT','Maestro-TT'],['Mamba Blades','Mamba Blades'],
+                ['Butz Blades','Butz Blades'],['TMount','TMount'],['Siam PingPong Handmade','Siam PingPong Handmade'],['SDCblades','SDCblades'],
+                ['MANUFAKTUR','MANUFAKTUR MEYER & SPYCHALA'],['Tischtennis-Manufaktur','Tischtennis-Manufaktur'],['Maxi Pong','Maxi Pong'],
+                ['Ulmo','Ulmo'],['Zsakambo','Zsakambo'],['Schildkröt','Schildkröt'],['JZ','JZ'],['Valor','Valor'],['Slazenger','Slazenger'],
+                ['Custom Blades','Custom Blades by Marc Gaser'],['Impact','Impact'],['Futurespin','Futurespin'],['Mr-Tischtennis','Mr-Tischtennis'],
+                ['Banco','Banco'],['The EGG','The EGG'],['Pfannschmidt','Pfannschmidt'],['Komann','Komann'],['Banda','Banda'],['VT','VT'],
+                ['Spintech','Spintech'],['Lion','Lion']
+            ];
+            for (const [prefix,brand] of rules) if (name.toLowerCase().startsWith(prefix.toLowerCase())) return brand;
+            return name.split(' ')[0];
+        }
+        function extendedCategory(name) {
+            if (!extendedRubberNames.has(name)) return 'racket';
+            if (extendedLongPipsNames.has(name)) return 'long-pips';
+            if (extendedPipsOutNames.has(name)) return 'pips-out';
+            return 'inverted';
+        }
+        function extendedReleaseDate(name) {
+            if (extendedReleaseYears[2026].includes(name)) return '2026-01-01';
+            if (extendedReleaseYears[2025].includes(name)) return '2025-01-01';
+            if (extendedReleaseYears[2024].includes(name)) return '2024-01-01';
+            return null;
+        }
+        function extendedPopularity(name,rating) {
+            const known = {"スワットスピン": 100, "ヴェガ ヨーロッパ": 96, "ドナックル（表ソフト）": 94, "モリストSP": 92, "ディグニクス05": 91, "テナジー05": 90, "ラクザ7": 89, "ファスターク G-1": 88, "ロゼナ": 87, "ビスカリア": 86};
+            return known[name] !== undefined ? known[name] : Math.round((rating || 4.4) * 18);
+        }
+        const extendedEquipment = extendedCatalogNames.map((name,index) => {
+            const isRubber = extendedRubberNames.has(name);
+            const rating = 4.4 + ((index * 7) % 6) / 10;
+            return {
+                id:`x${index+1}`,name,brand:extendedBrandFromName(name),category:extendedCategory(name),
+                price:isRubber ? 6500 : 15000,speed:82,spin:82,control:86,stiffness:'参考値',weight:'参考値',
+                desc:isRubber?'拡張卓球ラバーカタログ収録モデル。詳細な仕様はメーカー公表値をご確認ください。':'拡張卓球ラケットカタログ収録モデル。詳細な仕様はメーカー公表値をご確認ください。',
+                combos:[],rating,popularity:extendedPopularity(name,rating),releaseDate:extendedReleaseDate(name),imageUrl:RAKUTEN_DEFAULT_IMAGE
+            };
+        });
+        equipmentDatabase.forEach(item => {
+            if (item.popularity === undefined) item.popularity = Math.round((item.rating || 4.4) * 18);
+            if (item.releaseDate === undefined) item.releaseDate = null;
+        });
+        equipmentDatabase.push(...extendedEquipment);
+
+        // 外部画像が取得できない環境でも、製品名・ブランド・用具種別が分かる専用ビジュアルを表示する。
+        // 楽天APIに有効なアプリIDを設定した場合は、取得できた公式の商品画像でこの表示を自動的に置き換える。
+        function escapeSvgText(value) {
+            return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[char]);
+        }
+
+        function getEquipmentImage(item) {
+            const isRacket = item.category === 'racket';
+            const isSpecial = ['pips-out', 'long-pips', 'anti-spin'].includes(item.category);
+            const accent = isRacket ? '#ef4444' : isSpecial ? '#0f766e' : '#2563eb';
+            const kind = isRacket ? 'RACKET' : isSpecial ? 'SPECIAL RUBBER' : 'RUBBER';
+            const shortName = escapeSvgText(item.name.length > 20 ? `${item.name.slice(0, 20)}…` : item.name);
+            const brand = escapeSvgText(item.brand);
+            const productShape = isRacket
+                ? `<g transform="translate(150 108) rotate(-28)"><ellipse cx="0" cy="0" rx="43" ry="57" fill="${accent}"/><ellipse cx="0" cy="0" rx="31" ry="44" fill="#111827"/><rect x="-7" y="50" width="14" height="48" rx="6" fill="#a16207"/></g>`
+                : `<g transform="translate(150 106)"><rect x="-51" y="-51" width="102" height="102" rx="12" fill="${accent}"/><rect x="-42" y="-42" width="84" height="84" rx="8" fill="#111827"/>${isSpecial ? '<circle cx="-20" cy="-20" r="5" fill="#f8fafc"/><circle cx="0" cy="-20" r="5" fill="#f8fafc"/><circle cx="20" cy="-20" r="5" fill="#f8fafc"/><circle cx="-20" cy="0" r="5" fill="#f8fafc"/><circle cx="0" cy="0" r="5" fill="#f8fafc"/><circle cx="20" cy="0" r="5" fill="#f8fafc"/><circle cx="-20" cy="20" r="5" fill="#f8fafc"/><circle cx="0" cy="20" r="5" fill="#f8fafc"/><circle cx="20" cy="20" r="5" fill="#f8fafc"/>' : '<path d="M-28 12 C-12 -25, 12 -25, 28 12" fill="none" stroke="#f8fafc" stroke-width="5" stroke-linecap="round"/>'}</g>`;
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><rect width="300" height="300" rx="20" fill="#f8fafc"/><rect x="12" y="12" width="276" height="276" rx="14" fill="#fff" stroke="#e2e8f0" stroke-width="2"/>${productShape}<text x="150" y="202" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="${accent}">${kind}</text><text x="150" y="222" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">${brand}</text><text x="150" y="246" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#334155">${shortName}</text></svg>`;
+            return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+        }
+
+        equipmentDatabase.forEach(item => { item.imageUrl = getEquipmentImage(item); });
+
+/* ==========================================================
+           2. DIAGNOSTIC QUIZ CONFIG & ENGINE
+           ========================================================== */
+        const quizQuestions = [
+            {
+                id: 'style',
+                title: '普段のプレーで近いものは？',
+                subtitle: '今できることだけでなく、「これからこんなふうに打ちたい」でも選べます。迷ったら一番近いものを選んでください。',
+                options: [
+                    { value: 'drive-attack', label: '回転をかけて攻めたい（ドライブ中心）', desc: 'ラケットを振って球に回転をかけ、強い球で得点をねらうスタイル', icon: 'fa-fire' },
+                    { value: 'frontline-fast', label: '台の近くで早く打ちたい', desc: '相手の球を早いタイミングで打ち、速さやカウンターで攻めるスタイル', icon: 'fa-bolt' },
+                    { value: 'cut-chopper', label: '守ってから反撃したい（カット中心）', desc: '台から少し離れて下回転の球で粘り、チャンスで攻めるスタイル', icon: 'fa-shield-halved' },
+                    { value: 'all-round', label: 'まずは安定して幅広く打ちたい', desc: '攻め・守りのどちらにも対応しやすく、ミスを減らしてラリーを続けるスタイル', icon: 'fa-circle-nodes' }
+                ]
+            },
+            {
+                id: 'position',
+                title: '台からどのくらい離れて打つことが多いですか？',
+                subtitle: '普段いちばん多い立ち位置を選んでください。まだ決まっていない場合は「台の近く」がおすすめです。',
+                options: [
+                    { value: 'front', label: '台のすぐ近く（半歩〜1歩）', desc: '台からあまり下がらず、早いタイミングで打つことが多い', icon: 'fa-table-tennis-paddle-ball' },
+                    { value: 'mid', label: '台から少し離れる（1〜2歩）', desc: '少し下がって、ラケットを大きく振って打つことが多い', icon: 'fa-expand' },
+                    { value: 'back', label: '台から大きく離れる（2m以上）', desc: '後ろから粘って返す、またはカットや大きなドライブを使うことが多い', icon: 'fa-arrows-left-right' }
+                ]
+            },
+            {
+                id: 'level',
+                title: '今の卓球経験に一番近いものは？',
+                subtitle: '年数よりも「今の感覚」で選んでください。用具の扱いやすさの目安にします。',
+                options: [
+                    { value: 'beginner', label: '基本を練習中・始めたばかり', desc: 'フォア打ち、バック打ち、ツッツキなどを練習している。まずは扱いやすさを重視したい', icon: 'fa-seedling' },
+                    { value: 'intermediate', label: '一通り打てて、試合でも使いたい', desc: 'サーブ・レシーブやドライブを使い、部活・クラブ・大会で上達を目指している', icon: 'fa-graduation-cap' },
+                    { value: 'advanced', label: '自分の強みがあり、性能を絞り込みたい', desc: '試合経験が豊富で、より速さ・回転・打球感など自分向けの性能を求めている', icon: 'fa-trophy' }
+                ]
+            },
+            {
+                id: 'preference',
+                title: '用具で、いちばん良くしたいことは？',
+                subtitle: '迷ったら「ミスを減らしたい」を選ぶと、扱いやすい組合せを優先します。',
+                options: [
+                    { value: 'speed', label: 'もっと速い球を打ちたい', desc: '相手を押し込むスピードや、遠くまで飛ぶ力を重視したい', icon: 'fa-gauge-high' },
+                    { value: 'spin', label: 'もっと回転をかけたい', desc: 'ドライブを安定させたり、サーブや台上の球に回転をかけたりしたい', icon: 'fa-rotate' },
+                    { value: 'control', label: 'ミスを減らして安定させたい', desc: '狙った場所に入れやすく、相手の強い球も返しやすいことを重視したい', icon: 'fa-crosshair' },
+                    { value: 'spin-sticky', label: '重い回転球を出したい（粘着ラバー）', desc: '球をラバーにくっつけるように打ち、独特の重い回転を出したい。初めてなら他の項目がおすすめ', icon: 'fa-magnet' }
+                ]
+            },
+            {
+                id: 'budget',
+                title: 'ラケット1本＋ラバー2枚の予算は？',
+                subtitle: '貼り付け代は含めず、用具そのものの合計予算で選んでください。',
+                options: [
+                    { value: 'low', label: '15,000円まで', desc: '初めての本格セットや、費用を抑えつつ使いやすいものを選びたい', icon: 'fa-yen-sign' },
+                    { value: 'mid', label: '15,000〜30,000円', desc: '性能と価格のバランスがよい、部活・クラブ向けの本格セットを選びたい', icon: 'fa-coins' },
+                    { value: 'high', label: '30,000円以上', desc: '価格より性能を優先して、自分に合う高性能な組合せを選びたい', icon: 'fa-gem' }
+                ]
+            },
+            {
+                id: 'grip',
+                title: 'ラケットの握り方はどれですか？',
+                subtitle: '自分のラケットを見て選んでください。両面を使う一般的な握り方なら「シェークハンド」です。',
+                options: [
+                    { value: 'shake-fl', label: 'シェークハンド（両面を使う一般的な形）', desc: '握手のように握るラケット。FL・ST表記のラケットもこれです', icon: 'fa-hand-flex' },
+                    { value: 'pen-cn', label: '中国式ペン（裏面も使う）', desc: 'ペンを持つように握り、表と裏の両方にラバーを貼って打つ形', icon: 'fa-hand' },
+                    { value: 'pen-jp', label: '日本式ペン（主に片面を使う）', desc: 'ペンを持つように握る、角型・丸型のラケット。主に片面で打つ形', icon: 'fa-grip-vertical' }
+                ]
+            }
+        ];
+
+        let currentQuizStep = 0;
+        let quizAnswers = {};
+        let resultChartInstance = null;
+        let currentUser = localStorage.getItem('takusuku_current_user') || '';
+        let authMode = 'login';
+        let savedSetups = [];
+
+        function getLocalUsers() {
+            try {
+                return JSON.parse(localStorage.getItem('takusuku_local_users') || '{}');
+            } catch (error) {
+                return {};
+            }
+        }
+
+        function savedSetupsKey() {
+            return currentUser ? `takusuku_saved_setups_${currentUser}` : '';
+        }
+
+        function loadSavedSetups() {
+            try {
+                savedSetups = currentUser ? JSON.parse(localStorage.getItem(savedSetupsKey()) || '[]') : [];
+            } catch (error) {
+                savedSetups = [];
+            }
+        }
+
+        function persistSavedSetups() {
+            if (currentUser) localStorage.setItem(savedSetupsKey(), JSON.stringify(savedSetups));
+        }
+
+        /* ==========================================================
+           3. APPLICATION INITIALIZATION & STATE
+           ========================================================== */
+        window.onload = function() {
+            loadSavedSetups();
+            renderQuizStep();
+            renderDatabaseItems(equipmentDatabase);
+            updateSavedBadge();
+            updateAccountButton();
+            
+            // 楽天API呼び出し（App IDが登録されている場合のみ作動）
+            fetchRakutenData(RAKUTEN_APP_ID);
+        };
+
+        function switchTab(tabName) {
+            const diagView = document.getElementById('view-diagnosis');
+            const dbView = document.getElementById('view-database');
+            const diagBtn = document.getElementById('tab-btn-diagnosis');
+            const dbBtn = document.getElementById('tab-btn-database');
+
+            if (tabName === 'diagnosis') {
+                diagView.classList.remove('hidden');
+                dbView.classList.add('hidden');
+                
+                diagBtn.className = "px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold flex items-center space-x-2 bg-slate-900 text-white shadow-sm";
+                dbBtn.className = "px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold flex items-center space-x-2 text-slate-600 hover:text-brand-dark";
+            } else {
+                diagView.classList.add('hidden');
+                dbView.classList.remove('hidden');
+
+                dbBtn.className = "px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold flex items-center space-x-2 bg-slate-900 text-white shadow-sm";
+                diagBtn.className = "px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold flex items-center space-x-2 text-slate-600 hover:text-brand-dark";
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ==========================================================
+           4. QUIZ FUNCTIONS
+           ========================================================== */
+        function renderQuizStep() {
+            const q = quizQuestions[currentQuizStep];
+            const container = document.getElementById('quiz-questions');
+            const titleEl = document.getElementById('quiz-step-title');
+            const percentEl = document.getElementById('quiz-progress-percent');
+            const progressBar = document.getElementById('quiz-progress-bar');
+            const prevBtn = document.getElementById('quiz-prev-btn');
+            const nextBtn = document.getElementById('quiz-next-btn');
+
+            const percent = Math.round(((currentQuizStep + 1) / quizQuestions.length) * 100);
+            titleEl.textContent = `質問 ${currentQuizStep + 1} / ${quizQuestions.length}`;
+            percentEl.textContent = `${percent}%`;
+            progressBar.style.width = `${percent}%`;
+
+            prevBtn.disabled = currentQuizStep === 0;
+
+            if (currentQuizStep === quizQuestions.length - 1) {
+                nextBtn.innerHTML = `<span>結果を判定する</span> <i class="fa-solid fa-wand-magic-sparkles"></i>`;
+            } else {
+                nextBtn.innerHTML = `<span>次へ進む</span> <i class="fa-solid fa-arrow-right text-xs"></i>`;
+            }
+
+            let html = `
+                <div class="space-y-4">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-brand-dark mb-1 flex items-center space-x-2">
+                            <span class="text-slate-900">Q${currentQuizStep + 1}.</span>
+                            <span>${q.title}</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">${q.subtitle}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            `;
+
+            q.options.forEach(opt => {
+                const isSelected = quizAnswers[q.id] === opt.value;
+                html += `
+                    <div onclick="selectQuizOption('${q.id}', '${opt.value}')" 
+                        class="p-3.5 rounded-lg border cursor-pointer flex items-start space-x-3 ${
+                            isSelected 
+                            ? 'bg-slate-100 border-slate-900 text-brand-dark ring-1 ring-slate-900' 
+                            : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
+                        }">
+                        <div class="w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${isSelected ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}">
+                            <i class="fa-solid ${opt.icon} text-sm"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-xs sm:text-sm ${isSelected ? 'text-slate-900' : 'text-brand-dark'}">${opt.label}</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5 leading-tight">${opt.desc}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+            container.innerHTML = html;
+        }
+
+        function selectQuizOption(qId, val) {
+            quizAnswers[qId] = val;
+            renderQuizStep();
+        }
+
+        function nextQuizStep() {
+            const currentQ = quizQuestions[currentQuizStep];
+            if (!quizAnswers[currentQ.id]) {
+                showToast('選択肢を選んでから「次へ」を押してください');
+                return;
+            }
+
+            if (currentQuizStep < quizQuestions.length - 1) {
+                currentQuizStep++;
+                renderQuizStep();
+            } else {
+                runDiagnosisEngine();
+            }
+        }
+
+        function prevQuizStep() {
+            if (currentQuizStep > 0) {
+                currentQuizStep--;
+                renderQuizStep();
+            }
+        }
+
+        function resetQuiz() {
+            currentQuizStep = 0;
+            quizAnswers = {};
+            document.getElementById('quiz-results').classList.add('hidden');
+            document.getElementById('quiz-container').classList.remove('hidden');
+            renderQuizStep();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ==========================================================
+           5. DIAGNOSIS RECOMMENDATION ALGORITHM
+           ========================================================== */
+        function runDiagnosisEngine() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('quiz-loading').classList.remove('hidden');
+
+            setTimeout(() => {
+                document.getElementById('quiz-loading').classList.add('hidden');
+                document.getElementById('quiz-results').classList.remove('hidden');
+
+                const style = quizAnswers['style'];
+                const position = quizAnswers['position'];
+                const level = quizAnswers['level'];
+                const pref = quizAnswers['preference'];
+                const budget = quizAnswers['budget'];
+                const grip = quizAnswers['grip'];
+
+                const calculateMatch = (item, type) => {
+                    let score = 50;
+
+                    if (budget === 'low') {
+                        if (item.price <= 7000) score += 25;
+                        else if (item.price > 12000) score -= 30;
+                    } else if (budget === 'mid') {
+                        if (item.price >= 5000 && item.price <= 20000) score += 20;
+                    } else if (budget === 'high') {
+                        if (item.price >= 15000) score += 25;
+                    }
+
+                    if (level === 'beginner') {
+                        score += (item.control * 0.4);
+                        if (item.speed > 92) score -= 25;
+                    } else if (level === 'intermediate') {
+                        score += (item.speed * 0.2) + (item.control * 0.2) + (item.spin * 0.2);
+                    } else if (level === 'advanced') {
+                        score += (item.speed * 0.3) + (item.spin * 0.3);
+                    }
+
+                    if (style === 'drive-attack') score += (item.spin * 0.16) + (item.speed * 0.08);
+                    if (style === 'frontline-fast') score += (item.speed * 0.18) + (item.control * 0.08);
+                    if (style === 'cut-chopper') score += (item.control * 0.18) + (item.spin * 0.12);
+                    if (style === 'all-round') score += (item.control * 0.16) + (item.spin * 0.06);
+
+                    if (position === 'front') score += (item.speed * 0.10) + (item.control * 0.08);
+                    if (position === 'mid') score += (item.spin * 0.08) + (item.speed * 0.06);
+                    if (position === 'back') score += (item.spin * 0.10) + (item.control * 0.10);
+
+                    if (pref === 'speed') score += (item.speed * 0.4);
+                    if (pref === 'spin') score += (item.spin * 0.4);
+                    if (pref === 'control') score += (item.control * 0.4);
+                    if (pref === 'spin-sticky') {
+                        if (item.desc.includes('粘着') || item.name.includes('09C') || item.name.includes('キョウヒョウ') || item.name.includes('K3')) {
+                            score += 35;
+                        }
+                    }
+
+                    if (type === 'racket') {
+                        if (style === 'cut-chopper' && item.category === 'racket') {
+                            if (item.id === 'r10') score += 50;
+                        }
+                        if (grip === 'pen-cn' && item.name.includes('中国式')) score += 20;
+                    } else if (type === 'forehand') {
+                        if (item.category === 'pips-out' || item.category === 'long-pips') score -= 40;
+                    } else if (type === 'backhand') {
+                        if (style === 'frontline-fast' && item.category === 'pips-out') score += 40;
+                        if (style === 'cut-chopper' && item.category === 'long-pips') score += 45;
+                    }
+
+                    return score;
+                };
+
+                const rackets = equipmentDatabase.filter(x => x.category === 'racket');
+                const rubbers = equipmentDatabase.filter(x => x.category !== 'racket');
+
+                const matchedRacket = [...rackets].sort((a,b) => calculateMatch(b, 'racket') - calculateMatch(a, 'racket'))[0];
+                const matchedForehand = [...rubbers].sort((a,b) => calculateMatch(b, 'forehand') - calculateMatch(a, 'forehand'))[0];
+                const matchedBackhand = [...rubbers].filter(x => x.id !== matchedForehand.id)
+                                                .sort((a,b) => calculateMatch(b, 'backhand') - calculateMatch(a, 'backhand'))[0];
+
+                const targetProfile = getTargetProfile({ style, position, level, preference: pref });
+                const setupMetrics = calculateSetupMetrics(matchedRacket, matchedForehand, matchedBackhand);
+                const matchScore = calculateProfileFit(setupMetrics, targetProfile);
+
+                let reasons = [
+                    `【${getLabel('style', style)} × ${getLabel('level', level)}】の特性にマッチする高精度コンビネーションを選出。`,
+                    `ラケット（${matchedRacket.name}）：重視された「${getLabel('preference', pref)}」を最大限活かす剛性とバランスを保持。`,
+                    `フォア面（${matchedForehand.name}）：${getLabel('position', position)}からの強烈な打球・威力を再現するスペック。`,
+                    `バック面（${matchedBackhand.name}）：コントロール性と ${getLabel('style', style)} に求められるブロック・反撃性能を両立。`,
+                    `総合評価：回答から作成した目標値との差を5項目で比較し、適合度 ${matchScore}% を算出。`
+                ];
+
+                document.getElementById('result-match-score').textContent = matchScore;
+                document.getElementById('result-summary-text').textContent = 
+                    `アンケート回答【${getLabel('style', style)} / ${getLabel('level', level)} / 優先: ${getLabel('preference', pref)}】に最も合致する厳選セッティングです。${matchedRacket.name}の打球感に、フォア「${matchedForehand.name}」とバック「${matchedBackhand.name}」が完璧に調和します。`;
+
+                renderResultCard('result-racket-card', 'ブレード / ラケット', matchedRacket, 'fa-table-tennis-paddle-ball text-slate-900');
+                renderResultCard('result-forehand-card', 'フォア面ラバー (表面)', matchedForehand, 'fa-fire text-slate-900');
+                renderResultCard('result-backhand-card', 'バック面ラバー (裏面)', matchedBackhand, 'fa-shield-halved text-slate-900');
+
+                const reasonList = document.getElementById('result-reasons-list');
+                reasonList.innerHTML = reasons.map(r => `
+                    <div class="flex items-start space-x-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <i class="fa-solid fa-circle-check text-slate-900 mt-0.5"></i>
+                        <span>${r}</span>
+                    </div>
+                `).join('');
+
+                renderResultChart(matchedRacket, matchedForehand, matchedBackhand, targetProfile);
+
+                window.currentResultSetup = {
+                    date: new Date().toLocaleDateString('ja-JP'),
+                    racket: matchedRacket,
+                    forehand: matchedForehand,
+                    backhand: matchedBackhand,
+                    score: matchScore,
+                    metrics: setupMetrics
+                };
+
+                window.scrollTo({ top: 250, behavior: 'smooth' });
+            }, 600);
+        }
+
+        function getItemById(id) {
+            return equipmentDatabase.find(x => x.id === id) || equipmentDatabase[0];
+        }
+
+        function getLabel(qId, val) {
+            const q = quizQuestions.find(x => x.id === qId);
+            if (!q) return val;
+            const opt = q.options.find(o => o.value === val);
+            return opt ? opt.label : val;
+        }
+
+        /* 拡大・見やすさを重視した結果カードレンダリング */
+        function renderResultCard(containerId, categoryTitle, item, iconClass) {
+            const el = document.getElementById(containerId);
+            const priceLabel = item.isRakutenPrice ? '楽天最安値' : '参考定価';
+            
+            el.innerHTML = `
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fa-solid ${iconClass}"></i>
+                            <span>${categoryTitle}</span>
+                        </span>
+                        <span class="text-[10px] font-extrabold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">${item.brand}</span>
+                    </div>
+                    
+                    <!-- 拡大表示用画像エリア (w-24 h-24) -->
+                    <div class="flex flex-col items-center mb-3">
+                        <div class="w-24 h-24 sm:w-28 sm:h-28 bg-slate-50 rounded-lg border border-slate-200 p-2 flex items-center justify-center shadow-inner group cursor-pointer overflow-hidden mb-2" onclick="openModal('${item.id}')">
+                            <img src="${item.imageUrl}" alt="${item.name}" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-200">
+                        </div>
+                        <h4 class="text-base font-bold text-brand-dark hover:text-slate-700 cursor-pointer text-center leading-tight px-1" onclick="openModal('${item.id}')">${item.name}</h4>
+                    </div>
+
+                    <p class="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed text-center">${item.desc}</p>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200 mb-3">
+                        <span class="text-slate-500 font-medium">${priceLabel}</span>
+                        <span class="font-extrabold ${item.isRakutenPrice ? 'text-red-600' : 'text-brand-dark'}">¥${item.price.toLocaleString()}</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-1.5 mb-2">
+                        <button onclick="openEcommerceSearch('${item.name}', 'amazon')" class="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[10px] py-1.5 rounded font-bold flex items-center justify-center space-x-1 transition">
+                            <i class="fa-brands fa-amazon"></i><span>Amazon</span>
+                        </button>
+                        <button onclick="openEcommerceSearch('${item.name}', 'rakuten')" class="bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-[10px] py-1.5 rounded font-bold flex items-center justify-center space-x-1 transition">
+                            <i class="fa-solid fa-shop"></i><span>楽天</span>
+                        </button>
+                        <button onclick="openEcommerceSearch('${item.name}', 'yahoo')" class="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[10px] py-1.5 rounded font-bold flex items-center justify-center space-x-1 transition">
+                            <i class="fa-solid fa-bag-shopping"></i><span>Yahoo</span>
+                        </button>
+                    </div>
+
+                    <button onclick="openModal('${item.id}')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2 rounded-lg font-bold flex items-center justify-center space-x-1 transition">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>スペック詳細を見る</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function clampScore(value) {
+            return Math.max(0, Math.min(100, Math.round(value)));
+        }
+
+        function calculateSetupMetrics(racket, forehand, backhand) {
+            // ラケットは土台、フォアは主な得点力、バックは安定性への寄与を大きくして合成する。
+            const speed = clampScore(racket.speed * 0.45 + forehand.speed * 0.35 + backhand.speed * 0.20);
+            const spin = clampScore(racket.spin * 0.15 + forehand.spin * 0.50 + backhand.spin * 0.35);
+            const control = clampScore(racket.control * 0.45 + forehand.control * 0.25 + backhand.control * 0.30);
+            const attackBase = racket.speed * 0.50 + forehand.speed * 0.35 + backhand.speed * 0.15;
+            const spinSupport = racket.spin * 0.15 + forehand.spin * 0.50 + backhand.spin * 0.35;
+            const power = clampScore(attackBase * 0.70 + spinSupport * 0.30);
+            const componentValues = [racket, forehand, backhand].map(item => item.speed * 0.35 + item.spin * 0.30 + item.control * 0.35);
+            const componentAverage = componentValues.reduce((sum, value) => sum + value, 0) / componentValues.length;
+            const componentDeviation = Math.sqrt(componentValues.reduce((sum, value) => sum + (value - componentAverage) ** 2, 0) / componentValues.length);
+            const cohesion = Math.max(55, 100 - componentDeviation * 3);
+            const stability = clampScore(control * 0.65 + spin * 0.20 + cohesion * 0.15);
+            return { speed, spin, control, power, stability };
+        }
+
+        function getTargetProfile({ style, position, level, preference }) {
+            const targets = {
+                beginner: { speed: 68, spin: 70, control: 88, power: 66, stability: 90 },
+                intermediate: { speed: 80, spin: 82, control: 80, power: 80, stability: 82 },
+                advanced: { speed: 90, spin: 88, control: 74, power: 92, stability: 76 }
+            }[level];
+            const target = { ...targets };
+            const adjust = (values) => Object.entries(values).forEach(([key, value]) => { target[key] += value; });
+            if (preference === 'speed') adjust({ speed: 12, power: 12, control: -4 });
+            if (preference === 'spin') adjust({ spin: 14, power: 4 });
+            if (preference === 'control') adjust({ control: 12, stability: 12, speed: -6, power: -6 });
+            if (preference === 'spin-sticky') adjust({ spin: 16, power: 8, control: -4 });
+            if (style === 'drive-attack') adjust({ spin: 7, power: 7 });
+            if (style === 'frontline-fast') adjust({ speed: 7, power: 6, control: 4 });
+            if (style === 'cut-chopper') adjust({ spin: 7, control: 8, stability: 10, power: -9 });
+            if (style === 'all-round') adjust({ control: 5, stability: 6 });
+            if (position === 'front') adjust({ speed: 4, control: 4 });
+            if (position === 'mid') adjust({ spin: 4, power: 4 });
+            if (position === 'back') adjust({ spin: 5, stability: 5, speed: -3 });
+            Object.keys(target).forEach(key => { target[key] = clampScore(Math.max(55, Math.min(95, target[key]))); });
+            return target;
+        }
+
+        function calculateProfileFit(metrics, target) {
+            const weights = { speed: 1, spin: 1, control: 1.2, power: 1, stability: 1.2 };
+            const weightedDifference = Object.keys(weights).reduce((sum, key) => sum + Math.abs(metrics[key] - target[key]) * weights[key], 0);
+            const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+            return clampScore(100 - weightedDifference / totalWeight);
+        }
+
+        function renderResultChart(racket, forehand, backhand, targetProfile) {
+            const ctx = document.getElementById('resultChart').getContext('2d');
+            if (resultChartInstance) {
+                resultChartInstance.destroy();
+            }
+
+            const metrics = calculateSetupMetrics(racket, forehand, backhand);
+            const labels = ['スピード', '回転・スピン', 'コントロール', '威力・破壊力', 'ラリー安定性'];
+            const metricValues = [metrics.speed, metrics.spin, metrics.control, metrics.power, metrics.stability];
+            const targetValues = [targetProfile.speed, targetProfile.spin, targetProfile.control, targetProfile.power, targetProfile.stability];
+            const fit = calculateProfileFit(metrics, targetProfile);
+            document.getElementById('result-balance-summary').innerHTML = `
+                <div class="font-bold text-slate-800 mb-1">回答との適合度：<span class="text-red-600">${fit}%</span></div>
+                <div>黒線がこの組合せの合成値、赤い点線が回答から算出した目標値です。ラケット・フォア・バックの役割に応じて重み付けして評価しています。</div>
+            `;
+
+            resultChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: '組合せの合成値',
+                        data: metricValues,
+                        backgroundColor: 'rgba(15, 23, 42, 0.1)',
+                        borderColor: '#0f172a',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#0f172a',
+                        pointBorderColor: '#ffffff',
+                        pointHoverBackgroundColor: '#ffffff',
+                        pointHoverBorderColor: '#0f172a'
+                    }, {
+                        label: 'あなたの目標値',
+                        data: targetValues,
+                        backgroundColor: 'rgba(239, 68, 68, 0.03)',
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        borderDash: [5, 4],
+                        pointBackgroundColor: '#ef4444',
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e2e8f0' },
+                            grid: { color: '#f1f5f9' },
+                            pointLabels: { color: '#334155', font: { size: 10, weight: 'bold' } },
+                            ticks: { display: false, min: 0, max: 100 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        /* ==========================================================
+           6. DATABASE SEARCH & FILTERING FUNCTIONS
+           ========================================================== */
+        let currentCatFilter = 'all';
+
+        function filterCategory(cat) {
+            currentCatFilter = cat;
+            document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+                if (btn.dataset.cat === cat) {
+                    btn.className = "cat-filter-btn active px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap bg-slate-900 text-white shadow-sm";
+                } else {
+                    btn.className = "cat-filter-btn px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200";
+                }
+            });
+            applyDbFilters();
+        }
+
+        function applyDbFilters() {
+            const query = document.getElementById('db-search-input').value.trim().toLowerCase();
+            const brand = document.getElementById('db-brand-select').value;
+            const price = document.getElementById('db-price-select').value;
+            const sort = document.getElementById('db-sort-select').value;
+
+            document.getElementById('clear-search-btn').classList.toggle('hidden', query === '');
+
+            let filtered = equipmentDatabase.filter(item => {
+                if (query) {
+                    const matchName = item.name.toLowerCase().includes(query);
+                    const matchBrand = item.brand.toLowerCase().includes(query);
+                    const matchDesc = item.desc.toLowerCase().includes(query);
+                    if (!matchName && !matchBrand && !matchDesc) return false;
+                }
+
+                if (currentCatFilter !== 'all' && item.category !== currentCatFilter) return false;
+                if (brand !== 'all' && item.brand !== brand) return false;
+
+                if (price === 'under5000' && item.price > 5000) return false;
+                if (price === '5000-10000' && (item.price < 5000 || item.price > 10000)) return false;
+                if (price === '10000-20000' && (item.price < 10000 || item.price > 20000)) return false;
+                if (price === 'over20000' && item.price < 20000) return false;
+
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (sort === 'latest') {
+                    const aDate = a.releaseDate || '0000-00-00';
+                    const bDate = b.releaseDate || '0000-00-00';
+                    return bDate.localeCompare(aDate);
+                }
+                if (sort === 'popular') return (b.popularity || b.rating || 0) - (a.popularity || a.rating || 0);
+                if (sort === 'rating-desc') return b.rating - a.rating;
+                if (sort === 'speed-desc') return b.speed - a.speed;
+                if (sort === 'spin-desc') return b.spin - a.spin;
+                if (sort === 'price-asc') return a.price - b.price;
+                if (sort === 'price-desc') return b.price - a.price;
+                return 0;
+            });
+
+            renderDatabaseItems(filtered);
+        }
+
+        /* 拡大画像と楽天価格に対応したデータベースカード描画 */
+        function renderDatabaseItems(items) {
+            const grid = document.getElementById('db-grid');
+            const noRes = document.getElementById('db-no-results');
+            document.getElementById('db-count-text').textContent = items.length;
+
+            if (items.length === 0) {
+                grid.innerHTML = '';
+                noRes.classList.remove('hidden');
+                return;
+            }
+            noRes.classList.add('hidden');
+
+            let html = '';
+            items.forEach(item => {
+                const catBadge = getCategoryBadge(item.category);
+                const priceBadgeLabel = item.isRakutenPrice ? '楽天最安値' : '定価目安';
+                
+                html += `
+                    <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between hover:border-slate-900 shadow-sm transition">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-[10px] font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">${item.brand}</span>
+                                ${catBadge}
+                            </div>
+
+                            <!-- 拡大画像表示枠 (w-20 h-20 sm:w-24 sm:h-24) -->
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-lg border border-slate-200 p-2 shrink-0 flex items-center justify-center cursor-pointer overflow-hidden group shadow-sm" onclick="openModal('${item.id}')">
+                                    <img src="${item.imageUrl}" alt="${item.name}" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-200">
+                                </div>
+                                <h3 onclick="openModal('${item.id}')" class="font-bold text-brand-dark text-sm sm:text-base hover:text-slate-700 cursor-pointer transition line-clamp-2 leading-tight">${item.name}</h3>
+                            </div>
+
+                            <p class="text-xs text-slate-500 line-clamp-2 mb-3 leading-tight">${item.desc}</p>
+                        </div>
+
+                        <div>
+                            <div class="space-y-1.5 mb-3 text-xs">
+                                <div>
+                                    <div class="flex justify-between text-slate-500 mb-0.5 text-[10px]">
+                                        <span>スピード</span>
+                                        <span class="font-bold text-brand-dark">${item.speed}</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
+                                        <div class="bg-slate-900 h-full rounded-full" style="width: ${item.speed}%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-slate-500 mb-0.5 text-[10px]">
+                                        <span>スピン</span>
+                                        <span class="font-bold text-brand-dark">${item.spin}</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
+                                        <div class="bg-slate-500 h-full rounded-full" style="width: ${item.spin}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block">${priceBadgeLabel}</span>
+                                    <span class="font-extrabold ${item.isRakutenPrice ? 'text-red-600' : 'text-brand-dark'} text-xs sm:text-sm">¥${item.price.toLocaleString()}</span>
+                                </div>
+                                <button onclick="openModal('${item.id}')" class="px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+                                    詳細・検索
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        function getCategoryBadge(cat) {
+            if (cat === 'racket') return `<span class="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded">ラケット</span>`;
+            if (cat === 'inverted') return `<span class="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded">裏ソフト</span>`;
+            if (cat === 'pips-out') return `<span class="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded">表ソフト</span>`;
+            if (cat === 'long-pips') return `<span class="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded">粒高/アンチ</span>`;
+            return '';
+        }
+
+        function clearSearch() {
+            document.getElementById('db-search-input').value = '';
+            applyDbFilters();
+        }
+
+        function resetDbFilters() {
+            document.getElementById('db-search-input').value = '';
+            document.getElementById('db-brand-select').value = 'all';
+            document.getElementById('db-price-select').value = 'all';
+            document.getElementById('db-sort-select').value = 'popular';
+            filterCategory('all');
+        }
+
+        /* ==========================================================
+           7. MODAL & SAVED SETUPS LOGIC
+           ========================================================== */
+        function openModal(id) {
+            const item = getItemById(id);
+            if (!item) return;
+
+            document.getElementById('modal-title').textContent = item.name;
+            document.getElementById('modal-brand').textContent = item.brand;
+            document.getElementById('modal-category').textContent = item.category.toUpperCase();
+            document.getElementById('modal-image').src = item.imageUrl;
+            document.getElementById('modal-price').textContent = `¥${item.price.toLocaleString()}`;
+            document.getElementById('modal-speed').textContent = item.speed;
+            document.getElementById('modal-spin').textContent = item.spin;
+            document.getElementById('modal-control').textContent = item.control;
+            document.getElementById('modal-description').textContent = item.desc;
+
+            const query = encodeURIComponent(`${item.brand} ${item.name} 卓球`);
+            document.getElementById('link-amazon').href = `https://www.amazon.co.jp/s?k=${query}`;
+            document.getElementById('link-rakuten').href = `https://search.rakuten.co.jp/search/mall/${query}/`;
+            document.getElementById('link-yahoo').href = `https://shopping.yahoo.co.jp/search?p=${query}`;
+
+            const combosContainer = document.getElementById('modal-combos');
+            if (item.combos && item.combos.length > 0) {
+                combosContainer.innerHTML = item.combos.map(c => 
+                    `<span class="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-md flex items-center"><i class="fa-solid fa-link text-slate-900 mr-1.5"></i>${c}</span>`
+                ).join('');
+            } else {
+                combosContainer.innerHTML = `<span class="text-slate-400">万能タイプ。多くのラケットと高相性</span>`;
+            }
+
+            const modal = document.getElementById('detail-modal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('detail-modal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function openEcommerceSearch(itemName, platform) {
+            const query = encodeURIComponent(`${itemName} 卓球`);
+            let url = '';
+            if (platform === 'amazon') url = `https://www.amazon.co.jp/s?k=${query}`;
+            if (platform === 'rakuten') url = `https://search.rakuten.co.jp/search/mall/${query}/`;
+            if (platform === 'yahoo') url = `https://shopping.yahoo.co.jp/search?p=${query}`;
+            window.open(url, '_blank');
+        }
+
+        function saveCurrentResult() {
+            if (!window.currentResultSetup) return;
+            if (!currentUser) {
+                showToast('保存するにはログインしてください');
+                openLoginModal();
+                return;
+            }
+
+            savedSetups.unshift(window.currentResultSetup);
+            persistSavedSetups();
+            updateSavedBadge();
+            showToast('マイ組み合わせに保存しました！');
+        }
+
+        function updateSavedBadge() {
+            const badge = document.getElementById('saved-count-badge');
+            if (savedSetups.length > 0) {
+                badge.textContent = savedSetups.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function toggleSavedModal() {
+            if (!currentUser) {
+                showToast('マイ組み合わせを見るにはログインしてください');
+                openLoginModal();
+                return;
+            }
+            const modal = document.getElementById('saved-modal');
+            const isHidden = modal.classList.contains('opacity-0');
+
+            if (isHidden) {
+                renderSavedSetups();
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+            } else {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function renderSavedSetups() {
+            const list = document.getElementById('saved-setups-list');
+            if (savedSetups.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-bookmark text-2xl mb-1 text-slate-300"></i>
+                        <p class="text-xs">保存された組合せはありません。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            savedSetups.forEach((setup, idx) => {
+                html += `
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+                        <div class="flex justify-between items-center text-[10px] text-slate-500 border-b border-slate-200 pb-1">
+                            <span>保存日: ${setup.date}</span>
+                            <span class="text-slate-900 font-bold">適合率 ${setup.score}%</span>
+                        </div>
+                        <div class="text-xs font-bold text-brand-dark flex items-center space-x-2 pt-1">
+                            <img src="${setup.racket.imageUrl}" class="w-10 h-10 object-contain bg-white rounded border border-slate-200 p-1 shrink-0">
+                            <span>${setup.racket.name}</span>
+                        </div>
+                        <div class="text-[11px] text-slate-600 grid grid-cols-2 gap-2 pt-1">
+                            <div class="flex items-center space-x-2">
+                                <img src="${setup.forehand.imageUrl}" class="w-8 h-8 object-contain bg-white rounded border border-slate-200 p-0.5 shrink-0">
+                                <span class="truncate"><span class="text-slate-400">F:</span> ${setup.forehand.name}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <img src="${setup.backhand.imageUrl}" class="w-8 h-8 object-contain bg-white rounded border border-slate-200 p-0.5 shrink-0">
+                                <span class="truncate"><span class="text-slate-400">B:</span> ${setup.backhand.name}</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-1">
+                            <button onclick="removeSavedSetup(${idx})" class="text-[10px] text-slate-400 hover:text-slate-900">
+                                <i class="fa-solid fa-trash mr-1"></i>削除
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        function removeSavedSetup(idx) {
+            savedSetups.splice(idx, 1);
+            persistSavedSetups();
+            updateSavedBadge();
+            renderSavedSetups();
+            showToast('構成を削除しました');
+        }
+
+        function openLoginModal() {
+            const modal = document.getElementById('login-modal');
+            updateLoginModal();
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function setAuthMode(mode) {
+            authMode = mode;
+            document.getElementById('auth-message').classList.add('hidden');
+            updateLoginModal();
+        }
+
+        function updateLoginModal() {
+            const loggedIn = Boolean(currentUser);
+            document.getElementById('auth-forms').classList.toggle('hidden', loggedIn);
+            document.getElementById('logged-in-actions').classList.toggle('hidden', !loggedIn);
+            document.getElementById('login-status').classList.toggle('hidden', !loggedIn);
+            if (loggedIn) {
+                document.getElementById('logged-in-name').textContent = currentUser;
+                document.getElementById('login-status').textContent = `${currentUser} としてログインしています。`;
+                return;
+            }
+            const registering = authMode === 'register';
+            document.getElementById('auth-tab-login').className = `w-1/2 py-2 rounded-md ${registering ? 'text-slate-500' : 'bg-white shadow-sm text-slate-900'}`;
+            document.getElementById('auth-tab-register').className = `w-1/2 py-2 rounded-md ${registering ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`;
+            document.getElementById('auth-submit').textContent = registering ? '新規登録してログイン' : 'ログイン';
+            document.getElementById('auth-password').autocomplete = registering ? 'new-password' : 'current-password';
+        }
+
+        function showAuthMessage(message, isError = true) {
+            const el = document.getElementById('auth-message');
+            el.textContent = message;
+            el.className = `text-xs rounded-lg px-3 py-2 ${isError ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`;
+        }
+
+        function submitAuth(event) {
+            event.preventDefault();
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value;
+            if (username.length < 2) return showAuthMessage('ユーザー名は2文字以上で入力してください。');
+            if (password.length < 4) return showAuthMessage('パスワードは4文字以上で入力してください。');
+            const users = getLocalUsers();
+            if (authMode === 'register') {
+                if (users[username]) return showAuthMessage('このユーザー名はすでに使われています。');
+                users[username] = { password, createdAt: new Date().toISOString() };
+                localStorage.setItem('takusuku_local_users', JSON.stringify(users));
+                loginLocalUser(username);
+                showToast('アカウントを作成しました');
+                return;
+            }
+            if (!users[username] || users[username].password !== password) {
+                return showAuthMessage('ユーザー名またはパスワードが違います。');
+            }
+            loginLocalUser(username);
+            showToast('ログインしました');
+        }
+
+        function loginLocalUser(username) {
+            currentUser = username;
+            localStorage.setItem('takusuku_current_user', currentUser);
+            loadSavedSetups();
+            updateSavedBadge();
+            updateAccountButton();
+            closeLoginModal();
+        }
+
+        function logoutLocalUser() {
+            currentUser = '';
+            savedSetups = [];
+            localStorage.removeItem('takusuku_current_user');
+            updateSavedBadge();
+            updateAccountButton();
+            closeLoginModal();
+            showToast('ログアウトしました');
+        }
+
+        function updateAccountButton() {
+            const label = document.getElementById('account-button-label');
+            const button = document.getElementById('account-button');
+            if (currentUser) {
+                label.textContent = currentUser;
+                button.title = `${currentUser} としてログイン中`;
+                button.querySelector('i').className = 'fa-solid fa-user';
+            } else {
+                label.textContent = 'ログイン';
+                button.title = 'ログイン・アカウント';
+                button.querySelector('i').className = 'fa-solid fa-right-to-bracket';
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('translate-y-16', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-16', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
